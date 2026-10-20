@@ -1,5 +1,6 @@
 {
-  "$id": "io.void/tool",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://void.invalid/schemas/tool.json",
   "type": "object",
   "additionalProperties": false,
   "properties": {
@@ -12,5 +13,5 @@
     "risk_level": { "type": "string", "enum": ["low", "medium", "high"] },
     "idempotent": { "type": "boolean" }
   },
-  "required": ["tool_id", "schema_input", "schema_output"]
+  "required": ["tool_id", "name", "version", "schema_input", "schema_output"]
 }

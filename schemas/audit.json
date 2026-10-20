@@ -1,5 +1,6 @@
 {
-  "$id": "io.void/audit",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://void.invalid/schemas/audit.json",
   "type": "object",
   "additionalProperties": false,
   "properties": {

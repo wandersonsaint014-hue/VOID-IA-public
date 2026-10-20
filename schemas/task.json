@@ -1,5 +1,6 @@
 {
-  "$id": "io.void/task",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://void.invalid/schemas/task.json",
   "type": "object",
   "additionalProperties": false,
   "properties": {
@@ -11,5 +12,5 @@
     "constraints": { "type": "object" },
     "autonomy_level": { "type": "string", "enum": ["none", "low", "medium", "high"] }
   },
-  "required": ["task_id", "user_id", "objective"]
+  "required": ["task_id", "user_id", "created_at", "objective"]
 }

@@ -10,7 +10,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           persist-credentials: false
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 17
@@ -19,3 +19,8 @@ jobs:
           gradle-version: 8.14.4
           cache-read-only: true
       - run: gradle :core:test --no-daemon --console=plain
+      - name: Verify JSON schemas offline
+        run: |
+          python3 -m venv .schema-venv
+          .schema-venv/bin/python -m pip install --disable-pip-version-check jsonschema referencing
+          .schema-venv/bin/python scripts/verify_schemas.py

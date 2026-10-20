@@ -1,13 +1,14 @@
 {
-  "$id": "io.void/toolcall",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://void.invalid/schemas/toolcall.json",
   "type": "object",
   "additionalProperties": false,
   "properties": {
-    "call_id": {"type": "string"},
-    "tool_id": {"type": "string"},
-    "inputs": {"type": "object"},
-    "caller": {"type": "string"},
-    "permissions": {"type": "array", "items": {"type": "string"}}
+    "call_id": { "type": "string" },
+    "tool_id": { "type": "string" },
+    "inputs": { "type": "object" },
+    "caller": { "type": "string" },
+    "permissions": { "type": "array", "items": { "type": "string" } }
   },
   "required": ["call_id", "tool_id", "inputs", "caller"]
 }
