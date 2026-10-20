@@ -1,0 +1,15 @@
+{
+  "$id": "io.void/task",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "task_id": { "type": "string" },
+    "user_id": { "type": "string" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "objective": { "type": "string" },
+    "context": { "type": "object" },
+    "constraints": { "type": "object" },
+    "autonomy_level": { "type": "string", "enum": ["none", "low", "medium", "high"] }
+  },
+  "required": ["task_id", "user_id", "objective"]
+}

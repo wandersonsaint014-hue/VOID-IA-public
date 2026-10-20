@@ -1,0 +1,17 @@
+{
+  "$id": "io.void/step",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "step_id": { "type": "string" },
+    "description": { "type": "string" },
+    "responsible": { "type": "string" },
+    "inputs": { "type": "object" },
+    "tool": { "type": "string" },
+    "preconditions": { "type": "array", "items": { "type": "string" } },
+    "verification": { "type": "object" },
+    "retries": { "type": "integer", "default": 0 },
+    "timeout_seconds": { "type": "integer", "default": 60 }
+  },
+  "required": ["step_id", "description", "responsible"]
+}
