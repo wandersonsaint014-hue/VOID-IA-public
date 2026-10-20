@@ -10,7 +10,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           persist-credentials: false
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 17
@@ -21,5 +21,5 @@ jobs:
       - run: gradle :core:test --no-daemon --console=plain
       - name: Verify JSON schemas offline
         run: |
-          python -m pip install --disable-pip-version-check jsonschema referencing
-          python scripts/verify_schemas.py
+          python3 -m pip install --user --disable-pip-version-check jsonschema referencing
+          python3 scripts/verify_schemas.py
