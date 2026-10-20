@@ -1,0 +1,146 @@
+openapi: 3.0.3
+info:
+  title: VOID AI Core API (spec phase0)
+  version: "0.1.0"
+  description: |
+    API stub for VOID AI Core. Endpoints validate payloads against JSON Schemas in /schemas.
+servers:
+  - url: https://api.example.com
+paths:
+  /api/v1/tasks:
+    post:
+      summary: Create Task
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schemas/task.json'
+      responses:
+        '201':
+          description: Task created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  task_id:
+                    type: string
+  /api/v1/tasks/{task_id}:
+    get:
+      summary: Get Task and state
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Task detail
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  task:
+                    $ref: './schemas/task.json'
+                  state:
+                    type: string
+  /api/v1/tasks/{task_id}/approve:
+    post:
+      summary: Approve plan or steps
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                approver_id:
+                  type: string
+                step_ids:
+                  type: array
+                  items:
+                    type: string
+                approve:
+                  type: boolean
+                rationale:
+                  type: string
+      responses:
+        '200':
+          description: Approval result
+  /api/v1/plans/{plan_id}:
+    get:
+      summary: Get Plan
+      parameters:
+        - name: plan_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Plan
+          content:
+            application/json:
+              schema:
+                $ref: './schemas/plan.json'
+  /api/v1/toolcalls:
+    post:
+      summary: Execute ToolCall
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schemas/toolcall.json'
+      responses:
+        '200':
+          description: Tool call result
+  /api/v1/tools:
+    get:
+      summary: List Tool Descriptors
+      responses:
+        '200':
+          description: Tools
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: './schemas/tool.json'
+  /api/v1/audit:
+    get:
+      summary: Query Audit Logs
+      parameters:
+        - name: task_id
+          in: query
+          schema:
+            type: string
+        - name: since
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Audit logs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: './schemas/audit.json'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+security:
+  - bearerAuth: []
