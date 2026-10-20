@@ -1,16 +1,14 @@
 package io.void.core.model
 
-import com.fasterxml.jackson.databind.JsonNode
+import java.time.Instant
 
-enum class RiskLevel { LOW, MEDIUM, HIGH }
-
-data class ToolDescriptor(
-  val toolId: String,
-  val name: String,
-  val version: String,
-  val schemaInput: JsonNode,
-  val schemaOutput: JsonNode,
-  val permissionsRequired: List<String> = emptyList(),
-  val riskLevel: RiskLevel = RiskLevel.LOW,
-  val idempotent: Boolean = true
+/** Audit entry corresponding to the fields defined in schemas/audit.json. */
+data class AuditLog(
+  val entryId: String,
+  val taskId: String,
+  val timestamp: Instant,
+  val actor: String,
+  val action: String,
+  val outcome: Map<String, Any> = emptyMap(),
+  val evidence: List<Map<String, Any>> = emptyList()
 )
