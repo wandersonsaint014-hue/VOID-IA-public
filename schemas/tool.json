@@ -1,7 +1,7 @@
 {
   "$id": "io.void/tool",
   "type": "object",
-  "addiionalProperties": false,
+  "additionalProperties": false,
   "properties": {
     "tool_id": { "type": "string" },
     "name": { "type": "string" },
