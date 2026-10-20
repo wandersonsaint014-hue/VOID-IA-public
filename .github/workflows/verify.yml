@@ -1,1 +1,25 @@
-name: Verify core\non: [push, pull_request, workflow_dispatch]\npermissions:\n  contents: read\njobs:\n  test:\n    runs-on: ubuntu-latest\n    timeout-minutes: 15\n    steps:\n      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683\n        with:\n          persist-credentials: false\n      - uses: actions/setup-java@v4\n        with:\n          distribution: temurin\n          java-version: 17\n      - uses: gradle/actions/setup-gradle@v4\n        with:\n          gradle-version: 8.14.4\n          cache-read-only: true\n      - run: gradle :core:test --no-daemon --console=plain\n      - name: Verify JSON schemas offline\n        run: |\n          python -m pip install --disable-pip-version-check jsonschema referencing\n          python scripts/verify_schemas.py\n
+name: Verify core
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.14.4
+          cache-read-only: true
+      - run: gradle :core:test --no-daemon --console=plain
+      - name: Verify JSON schemas offline
+        run: |
+          python -m pip install --disable-pip-version-check jsonschema referencing
+          python scripts/verify_schemas.py
