@@ -21,5 +21,6 @@ jobs:
       - run: gradle :core:test --no-daemon --console=plain
       - name: Verify JSON schemas offline
         run: |
-          python3 -m pip install --user --disable-pip-version-check jsonschema referencing
-          python3 scripts/verify_schemas.py
+          python3 -m venv .schema-venv
+          .schema-venv/bin/python -m pip install --disable-pip-version-check jsonschema referencing
+          .schema-venv/bin/python scripts/verify_schemas.py
