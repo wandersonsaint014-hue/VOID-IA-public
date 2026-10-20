@@ -1,0 +1,13 @@
+{
+  "$id": "io.void/toolcall",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "call_id": {"type": "string"},
+    "tool_id": {"type": "string"},
+    "inputs": {"type": "object"},
+    "caller": {"type": "string"},
+    "permissions": {"type": "array", "items": {"type": "string"}}
+  },
+  "required": ["call_id", "tool_id", "inputs", "caller"]
+}
