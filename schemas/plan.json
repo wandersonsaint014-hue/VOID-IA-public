@@ -1,14 +1,12 @@
 {
-  "$id": "io.void/plan",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://void.invalid/schemas/plan.json",
   "type": "object",
   "additionalProperties": false,
   "properties": {
     "plan_id": { "type": "string" },
     "task_id": { "type": "string" },
-    "steps": {
-      "type": "array",
-      "items": { "$ref": "step.json" }
-    },
+    "steps": { "type": "array", "items": { "$ref": "step.json" } },
     "created_by": { "type": "string" },
     "metadata": { "type": "object" }
   },
