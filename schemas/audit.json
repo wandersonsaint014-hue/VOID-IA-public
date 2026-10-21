@@ -4,11 +4,11 @@
   "type": "object",
   "additionalProperties": false,
   "properties": {
-    "entry_id": { "type": "string" },
-    "task_id": { "type": "string" },
+    "entry_id": { "type": "string", "minLength": 1, "pattern": "\\S" },
+    "task_id": { "type": "string", "minLength": 1, "pattern": "\\S" },
     "timestamp": { "type": "string", "format": "date-time" },
-    "actor": { "type": "string" },
-    "action": { "type": "string" },
+    "actor": { "type": "string", "minLength": 1, "pattern": "\\S" },
+    "action": { "type": "string", "minLength": 1, "pattern": "\\S" },
     "outcome": { "type": "object" },
     "evidence": { "type": "array", "items": { "type": "object" } }
   },

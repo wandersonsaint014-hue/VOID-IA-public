@@ -3,6 +3,7 @@ package io.void.core.model
 import java.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 class CoreModelsTest {
@@ -11,6 +12,18 @@ class CoreModelsTest {
     assertEquals(AutonomyLevel.LOW, task.autonomyLevel)
     assertTrue(task.context.isEmpty())
     assertTrue(task.constraints.isEmpty())
+  }
+
+  @Test fun rejectsBlankRequiredModelFields() {
+    assertFailsWith<IllegalArgumentException> { Task(" ", "user-1", Instant.EPOCH, "Review") }
+    assertFailsWith<IllegalArgumentException> { Task("task-1", " ", Instant.EPOCH, "Review") }
+    assertFailsWith<IllegalArgumentException> { Task("task-1", "user-1", Instant.EPOCH, " ") }
+    assertFailsWith<IllegalArgumentException> { Plan(" ", "task-1", listOf(Step("step-1", "Review", "core"))) }
+    assertFailsWith<IllegalArgumentException> { Plan("plan-1", "task-1", emptyList()) }
+    assertFailsWith<IllegalArgumentException> { Step(" ", "Review", "core") }
+    assertFailsWith<IllegalArgumentException> { Step("step-1", " ", "core") }
+    assertFailsWith<IllegalArgumentException> { Step("step-1", "Review", " ") }
+    assertFailsWith<IllegalArgumentException> { ToolCall(" ", "tool-1", emptyMap(), "caller-1") }
   }
 
   @Test fun auditDefaultsContainNoEvidence() {

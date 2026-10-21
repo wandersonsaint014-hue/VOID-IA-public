@@ -1,13 +1,21 @@
-# Contract hardening scope
+# Contratos do núcleo
 
-This change establishes a small, testable serialization boundary for the Kotlin core. `VoidObjectMapper` serializes public models with snake_case properties, lowercase enums, ISO-8601 Java time values and omits nullable optional fields. It rejects unknown fields while deserializing contracts.
+## Estado e limites
 
-The JSON schemas are Draft-07 documents with stable `https://void.invalid/schemas/*.json` identifiers. `plan.json` retains the local `step.json` reference; CI resolves it only through an in-memory registry, so schema verification does not make network requests. `Task.created_at` and `ToolDescriptor.name`/`version` are now required. `Step` rejects negative retries and non-positive timeouts in both schema and Kotlin initialization; no upper limits were added because this phase has no runner policy from which to justify them.
+Os schemas JSON e os modelos Kotlin definem o formato de dados públicos do núcleo. Eles **não** disponibilizam API, servidor, aplicativo Android, autorização ou execução de ferramentas. O arquivo `Openapi.Yaml` é uma referência futura, não uma lista de endpoints em operação.
 
-## Deliberately out of scope
+O agente `void-planner` produz somente propostas revisáveis. O `PolicyGate` v1 avalia pedidos e nega todos por padrão; uma decisão de política não é uma instrução para executar. Nenhum contrato atual concede autoridade com base em `user_id`, `caller` ou `permissions` fornecidos pelo cliente.
 
-This does not implement a runner, authorization, approvals, Android persistence, or Android UI. Future Android work must enforce authenticated identity and server-side authorization rather than trust request `user_id`, `caller` or `permissions`; gate tools before execution; bound payloads/retries/timeouts at the runner policy layer; and redact secrets/PII before audit persistence. See `docs/SECURITY_REVIEW.md` for the existing design-risk inventory.
+## Serialização e validação
 
-## Policy gate v1
+`VoidObjectMapper` usa propriedades `snake_case`, enums em minúsculas, instantes ISO-8601 e omite campos opcionais nulos. Na desserialização, campos desconhecidos são rejeitados.
 
-`PolicyGate` is an evaluation boundary, not a runner. `DenyByDefaultPolicyGate` returns a denial for every request and appends a `policy_denied` audit record with the requested action, decision reasons and policy version. It intentionally does not include request arguments or destination in audit data, and it has no dependency on `ToolRunner`. A future allow path requires authenticated identity, a bound approval, action arguments, destination, expiry and dedicated tests before any tool can be invoked.
+Os schemas usam Draft-07 e IDs estáveis em `https://void.invalid/schemas/*.json`. A verificação no CI resolve referências localmente, sem rede. Kotlin e schemas rejeitam identificadores e textos obrigatórios vazios; `Plan.steps` não pode ser vazio; `Step` também rejeita tentativas negativas e timeout não positivo. Limites superiores de tamanho, tentativas e timeout continuam sendo responsabilidade de uma política de runtime futura.
+
+## Compatibilidade da API futura
+
+`Openapi.Yaml` preserva a forma pretendida da API, mas seus caminhos são reservados. Em especial, `/api/v1/toolcalls` não executa ferramentas: qualquer implementação futura deverá encaminhar pedidos ao `PolicyGate`, exigir identidade autenticada e aprovação vinculada a ação, argumentos, destino e expiração antes de chamar um runner.
+
+## Fora de escopo
+
+Este repositório ainda não implementa runner, autorização, aprovações, persistência Android nem UI Android. Conteúdo externo deve ser tratado como não confiável, e auditorias futuras precisam redigir segredos e dados pessoais antes de persistir. Consulte a [revisão de segurança](SECURITY_REVIEW.md) para riscos abertos.

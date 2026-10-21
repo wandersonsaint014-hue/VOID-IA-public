@@ -4,9 +4,9 @@
   "type": "object",
   "additionalProperties": false,
   "properties": {
-    "step_id": { "type": "string" },
-    "description": { "type": "string" },
-    "responsible": { "type": "string" },
+    "step_id": { "type": "string", "minLength": 1, "pattern": "\\S" },
+    "description": { "type": "string", "minLength": 1, "pattern": "\\S" },
+    "responsible": { "type": "string", "minLength": 1, "pattern": "\\S" },
     "inputs": { "type": "object" },
     "tool": { "type": "string" },
     "preconditions": { "type": "array", "items": { "type": "string" } },

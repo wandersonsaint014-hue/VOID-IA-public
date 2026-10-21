@@ -15,4 +15,10 @@ data class Task(
  val context: Map<String, Any> = emptyMap(),
  val constraints: Map<String, Any> = emptyMap(),
  val autonomyLevel: AutonomyLevel = AutonomyLevel.LOW
-)
+) {
+ init {
+  require(taskId.isNotBlank()) { "taskId must not be blank" }
+  require(userId.isNotBlank()) { "userId must not be blank" }
+  require(objective.isNotBlank()) { "objective must not be blank" }
+ }
+}

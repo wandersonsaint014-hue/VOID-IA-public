@@ -4,10 +4,10 @@
   "type": "object",
   "additionalProperties": false,
   "properties": {
-    "call_id": { "type": "string" },
-    "tool_id": { "type": "string" },
+    "call_id": { "type": "string", "minLength": 1, "pattern": "\\S" },
+    "tool_id": { "type": "string", "minLength": 1, "pattern": "\\S" },
     "inputs": { "type": "object" },
-    "caller": { "type": "string" },
+    "caller": { "type": "string", "minLength": 1, "pattern": "\\S" },
     "permissions": { "type": "array", "items": { "type": "string" } }
   },
   "required": ["call_id", "tool_id", "inputs", "caller"]

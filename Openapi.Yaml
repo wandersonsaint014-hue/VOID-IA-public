@@ -3,21 +3,24 @@ info:
   title: VOID AI Core API (spec phase0)
   version: "0.1.0"
   description: |
-    API stub for VOID AI Core. Endpoints validate payloads against JSON Schemas in /schemas.
-servers:
-  - url: https://api.example.com
+    Referência contratual para uma API futura do núcleo VOID.
+    Nenhum servidor ou endpoint deste arquivo está em operação. Em particular,
+    toolcalls não podem executar ferramentas enquanto não houver identidade autenticada,
+    aprovação vinculada e PolicyGate testado.
+x-void-contract-status: reference-only
+servers: []
 paths:
   /api/v1/tasks:
     post:
-      summary: Create Task
+      summary: Reserved: create task
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: './schemas/task.json'
+              $ref: ./schemas/task.json
       responses:
-        '201':
+        201:
           description: Task created
           content:
             application/json:
@@ -28,7 +31,7 @@ paths:
                     type: string
   /api/v1/tasks/{task_id}:
     get:
-      summary: Get Task and state
+      summary: Reserved: get task and state
       parameters:
         - name: task_id
           in: path
@@ -36,7 +39,7 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        200:
           description: Task detail
           content:
             application/json:
@@ -44,12 +47,12 @@ paths:
                 type: object
                 properties:
                   task:
-                    $ref: './schemas/task.json'
+                    $ref: ./schemas/task.json
                   state:
                     type: string
   /api/v1/tasks/{task_id}/approve:
     post:
-      summary: Approve plan or steps
+      summary: Reserved: record approval
       parameters:
         - name: task_id
           in: path
@@ -73,11 +76,11 @@ paths:
                 rationale:
                   type: string
       responses:
-        '200':
+        200:
           description: Approval result
   /api/v1/plans/{plan_id}:
     get:
-      summary: Get Plan
+      summary: Reserved: get plan
       parameters:
         - name: plan_id
           in: path
@@ -85,39 +88,39 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        200:
           description: Plan
           content:
             application/json:
               schema:
-                $ref: './schemas/plan.json'
+                $ref: ./schemas/plan.json
   /api/v1/toolcalls:
     post:
-      summary: Execute ToolCall
+      summary: Reserved: submit tool-call proposal (execution disabled)
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: './schemas/toolcall.json'
+              $ref: ./schemas/toolcall.json
       responses:
-        '200':
-          description: Tool call result
+        501:
+          description: Not implemented. A future runtime must evaluate policy before any execution.
   /api/v1/tools:
     get:
-      summary: List Tool Descriptors
+      summary: Reserved: list tool descriptors
       responses:
-        '200':
+        200:
           description: Tools
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: './schemas/tool.json'
+                  $ref: ./schemas/tool.json
   /api/v1/audit:
     get:
-      summary: Query Audit Logs
+      summary: Reserved: query audit logs
       parameters:
         - name: task_id
           in: query
@@ -128,14 +131,14 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        200:
           description: Audit logs
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: './schemas/audit.json'
+                  $ref: ./schemas/audit.json
 components:
   securitySchemes:
     bearerAuth:

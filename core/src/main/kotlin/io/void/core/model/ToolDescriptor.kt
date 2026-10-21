@@ -16,4 +16,10 @@ data class ToolDescriptor(
  val permissionsRequired: List<String> = emptyList(),
  val riskLevel: RiskLevel = RiskLevel.LOW,
  val idempotent: Boolean = true
-)
+) {
+ init {
+  require(toolId.isNotBlank()) { "toolId must not be blank" }
+  require(name.isNotBlank()) { "tool name must not be blank" }
+  require(version.isNotBlank()) { "tool version must not be blank" }
+ }
+}

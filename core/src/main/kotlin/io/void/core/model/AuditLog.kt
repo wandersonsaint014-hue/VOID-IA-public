@@ -11,4 +11,11 @@ data class AuditLog(
   val action: String,
   val outcome: Map<String, Any> = emptyMap(),
   val evidence: List<Map<String, Any>> = emptyList()
-)
+) {
+  init {
+    require(entryId.isNotBlank()) { "entryId must not be blank" }
+    require(taskId.isNotBlank()) { "taskId must not be blank" }
+    require(actor.isNotBlank()) { "actor must not be blank" }
+    require(action.isNotBlank()) { "action must not be blank" }
+  }
+}
