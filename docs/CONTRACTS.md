@@ -12,6 +12,14 @@ O agente `void-planner` produz somente propostas revisáveis. O `PolicyGate` v1 
 
 Os schemas usam Draft-07 e IDs estáveis em `https://void.invalid/schemas/*.json`. A verificação no CI resolve referências localmente, sem rede. Kotlin e schemas rejeitam identificadores e textos obrigatórios vazios; `Plan.steps` não pode ser vazio; `Step` também rejeita tentativas negativas e timeout não positivo. Limites superiores de tamanho, tentativas e timeout continuam sendo responsabilidade de uma política de runtime futura.
 
+## Aprovações futuras
+
+Não existe aprovação implementada ou verificável neste repositório. O caminho `POST /api/v1/tasks/{task_id}/approve` está reservado e retorna `501`; ele não aceita nem transforma dados do cliente em autorização.
+
+Uma aprovação futura deverá ser criada no servidor a partir da identidade autenticada e conter, no mínimo: alvo da tarefa/plano/etapa, ação normalizada, hash dos argumentos normalizados e do destino, escopo de autorização, versão da política, instante de emissão, expiração, estado de uso único e estado de revogação. O conteúdo sensível dos argumentos e do destino não deve ir para auditoria apenas para formar esse vínculo.
+
+Aprovar não executa nada e não torna uma ação permitida por si só. Antes de qualquer efeito, um runtime futuro deverá validar propriedade e autorização, confirmar que o vínculo não foi alterado, verificar expiração, consumo e revogação de forma atômica, e avaliar novamente o `PolicyGate`. Uma política que nega continua negando mesmo se houver uma aprovação apresentada.
+
 ## Compatibilidade da API futura
 
 `Openapi.Yaml` preserva a forma pretendida da API, mas seus caminhos são reservados. Em especial, `/api/v1/toolcalls` não executa ferramentas: qualquer implementação futura deverá encaminhar pedidos ao `PolicyGate`, exigir identidade autenticada e aprovação vinculada a ação, argumentos, destino e expiração antes de chamar um runner.

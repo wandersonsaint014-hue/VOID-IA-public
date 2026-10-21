@@ -24,12 +24,12 @@ Direção proposta, sem prazos prometidos. Caixas representam critérios de conc
 - [x] Produzir apenas planos revisáveis, auditáveis e sem ferramentas executáveis.
 - [ ] Formalizar estados e transições de tarefa, plano e etapa.
 - [x] Implementar `PolicyGate` somente avaliador: negar por padrão e registrar decisão, sem chamar ferramentas.
-- [ ] Vincular aprovação a identidade autenticada, ação, argumentos, destino e expiração.
+- [ ] Implementar aprovação verificável: identidade autenticada, alvo, ação/argumentos/destino normalizados, expiração, revogação e uso único.
 - [ ] Definir idempotência, limites de tentativas, timeout e payload na política de runtime.
 - [ ] Separar falha confirmada, efeito incerto e cancelamento.
 - [ ] Tratar conteúdo externo como dado não confiável.
 
-**Pronto quando:** testes rejeitarem ação não autorizada, aprovação alterada/expirada e repetição sensível indevida. Até lá, conectores e execução permanecem fora do produto.
+**Pronto quando:** testes rejeitarem ação não autorizada, aprovação alterada, expirada, revogada ou já consumida, e repetição sensível indevida. Até lá, conectores e execução permanecem fora do produto.
 
 ## 3. Fluxo com ferramentas simuladas
 

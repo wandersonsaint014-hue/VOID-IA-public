@@ -52,32 +52,21 @@ paths:
                     type: string
   /api/v1/tasks/{task_id}/approve:
     post:
-      summary: Reserved: record approval
+      summary: Reserved: approval request (not implemented)
+      description: |
+        This endpoint is not active and cannot authorize or execute any action.
+        A future implementation must derive the approver from authenticated server-side identity,
+        bind approval to a normalized action, arguments digest, destination, target, expiry and
+        single-use state, then re-evaluate policy before any effect.
       parameters:
         - name: task_id
           in: path
           required: true
           schema:
             type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                approver_id:
-                  type: string
-                step_ids:
-                  type: array
-                  items:
-                    type: string
-                approve:
-                  type: boolean
-                rationale:
-                  type: string
       responses:
-        200:
-          description: Approval result
+        "501":
+          description: Not implemented. Client-provided approver_id or permissions are never authorization grants.
   /api/v1/plans/{plan_id}:
     get:
       summary: Reserved: get plan
@@ -104,7 +93,7 @@ paths:
             schema:
               $ref: ./schemas/toolcall.json
       responses:
-        501:
+        "501":
           description: Not implemented. A future runtime must evaluate policy before any execution.
   /api/v1/tools:
     get:
