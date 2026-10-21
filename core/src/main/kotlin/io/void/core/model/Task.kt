@@ -14,7 +14,8 @@ data class Task(
  val objective: String,
  val context: Map<String, Any> = emptyMap(),
  val constraints: Map<String, Any> = emptyMap(),
- val autonomyLevel: AutonomyLevel = AutonomyLevel.LOW
+ val autonomyLevel: AutonomyLevel = AutonomyLevel.LOW,
+ val status: TaskStatus = TaskStatus.PLANNING
 ) {
  init {
   require(taskId.isNotBlank()) { "taskId must not be blank" }

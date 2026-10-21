@@ -5,7 +5,8 @@ data class Plan(
  val taskId: String,
  val steps: List<Step>,
  val createdBy: String? = null,
- val metadata: Map<String, Any> = emptyMap()
+ val metadata: Map<String, Any> = emptyMap(),
+ val status: PlanStatus = PlanStatus.PENDING_REVIEW
 ) {
  init {
   require(planId.isNotBlank()) { "planId must not be blank" }

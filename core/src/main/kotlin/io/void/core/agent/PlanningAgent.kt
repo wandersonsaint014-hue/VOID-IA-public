@@ -8,7 +8,9 @@ import io.void.core.contract.PlanGenerator
 import io.void.core.model.AuditLog
 import io.void.core.model.Plan
 import io.void.core.model.Step
+import io.void.core.model.StepStatus
 import io.void.core.model.Task
+import io.void.core.model.TaskStatus
 import java.time.Clock
 import java.util.UUID
 
@@ -29,6 +31,9 @@ class PlanningAgent(
   override suspend fun handleTask(task: Task, context: AgentContext): AgentResult {
     if (task.objective.isBlank()) {
       return AgentResult.Failure("task objective must not be blank")
+    }
+    if (task.status != TaskStatus.PLANNING) {
+      return AgentResult.Failure("planning agent requires a task in planning state")
     }
 
     return try {
@@ -56,7 +61,8 @@ class PlanningAgent(
           "model_mode" to model.mode
         )
       )
-      context.persistence.saveTask(task)
+      val reviewedTask = task.copy(status = TaskStatus.PENDING_REVIEW)
+      context.persistence.saveTask(reviewedTask)
       context.persistence.savePlan(plan)
       context.persistence.appendAudit(
         AuditLog(
@@ -65,12 +71,22 @@ class PlanningAgent(
           timestamp = clock.instant(),
           actor = name,
           action = "plan_proposed",
-          outcome = mapOf("plan_id" to plan.planId, "step_count" to plan.steps.size),
+          outcome = mapOf(
+            "plan_id" to plan.planId,
+            "step_count" to plan.steps.size,
+            "task_status" to reviewedTask.status.toString(),
+            "plan_status" to plan.status.toString()
+          ),
           evidence = listOf(mapOf("model_provider" to model.providerId, "model_id" to model.modelId))
         )
       )
       AgentResult.Success(
-        output = mapOf("plan_id" to plan.planId, "status" to "pending_review", "step_count" to plan.steps.size),
+        output = mapOf(
+          "plan_id" to plan.planId,
+          "status" to plan.status.toString(),
+          "task_status" to reviewedTask.status.toString(),
+          "step_count" to plan.steps.size
+        ),
         evidence = listOf(mapOf("audit_action" to "plan_proposed", "model_id" to model.modelId))
       )
     } catch (error: IllegalArgumentException) {
@@ -88,6 +104,9 @@ class PlanningAgent(
     require(steps.all { it.responsible.isNotBlank() }) { "plan steps must have responsible parties" }
     require(steps.all { it.tool == null }) {
       "planning agent cannot propose executable tools in the first runtime"
+    }
+    require(steps.all { it.status == StepStatus.PENDING_REVIEW }) {
+      "planning agent must propose steps pending review"
     }
   }
 }

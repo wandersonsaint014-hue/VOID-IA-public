@@ -4,13 +4,14 @@
   "type": "object",
   "additionalProperties": false,
   "properties": {
-    "task_id": { "type": "string", "minLength": 1, "pattern": "\\S" },
-    "user_id": { "type": "string", "minLength": 1, "pattern": "\\S" },
-    "created_at": { "type": "string", "format": "date-time" },
-    "objective": { "type": "string", "minLength": 1, "pattern": "\\S" },
-    "context": { "type": "object" },
-    "constraints": { "type": "object" },
-    "autonomy_level": { "type": "string", "enum": ["none", "low", "medium", "high"] }
+    "task_id": {"type": "string", "minLength": 1, "pattern": "\\S"},
+    "user_id": {"type": "string", "minLength": 1, "pattern": "\\S"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "objective": {"type": "string", "minLength": 1, "pattern": "\\S"},
+    "context": {"type": "object"},
+    "constraints": {"type": "object"},
+    "autonomy_level": {"type": "string", "enum": ["none", "low", "medium", "high"]},
+    "status": {"type": "string", "enum": ["planning", "pending_review", "approved", "rejected", "cancelled"], "default": "planning"}
   },
   "required": ["task_id", "user_id", "created_at", "objective"]
 }

@@ -9,7 +9,8 @@ data class Step(
  val preconditions: List<String> = emptyList(),
  val verification: Map<String, Any> = emptyMap(),
  val retries: Int = 0,
- val timeoutSeconds: Int = 60
+ val timeoutSeconds: Int = 60,
+ val status: StepStatus = StepStatus.PENDING_REVIEW
 ) {
  init {
   require(stepId.isNotBlank()) { "stepId must not be blank" }
