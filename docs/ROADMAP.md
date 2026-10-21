@@ -22,7 +22,7 @@ Direção proposta, sem prazos prometidos. Caixas representam critérios de conc
 ## 2. Controle antes dos conectores
 
 - [x] Produzir apenas planos revisáveis, auditáveis e sem ferramentas executáveis.
-- [ ] Formalizar estados e transições de tarefa, plano e etapa.
+- [x] Formalizar estados e transições de tarefa, plano e etapa para proposta e revisão, sem execução automática.
 - [x] Implementar `PolicyGate` somente avaliador: negar por padrão e registrar decisão, sem chamar ferramentas.
 - [ ] Implementar aprovação verificável: identidade autenticada, alvo, ação/argumentos/destino normalizados, expiração, revogação e uso único.
 - [ ] Definir idempotência, limites de tentativas, timeout e payload na política de runtime.

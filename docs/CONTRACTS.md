@@ -27,3 +27,12 @@ Aprovar não executa nada e não torna uma ação permitida por si só. Antes de
 ## Fora de escopo
 
 Este repositório ainda não implementa runner, autorização, aprovações, persistência Android nem UI Android. Conteúdo externo deve ser tratado como não confiável, e auditorias futuras precisam redigir segredos e dados pessoais antes de persistir. Consulte a [revisão de segurança](SECURITY_REVIEW.md) para riscos abertos.
+
+## Estados e transições
+
+O ciclo atual modela revisão de proposta, não execução. Os estados são serializados em minúsculas:
+
+- `Task`: `planning` → `pending_review` → `approved` | `rejected` | `cancelled`; uma tarefa em `planning` também pode ser `cancelled`.
+- `Plan` e `Step`: `pending_review` → `approved` | `rejected` | `cancelled`.
+
+`approved`, `rejected` e `cancelled` são terminais na versão atual: não há retorno implícito, reabertura nem transição automática. Qualquer mudança posterior exigirá uma nova proposta com identificador próprio e auditoria. `approved` indica somente que a proposta foi resolvida para revisão; não é autorização para executar nem substitui `PolicyGate`, identidade autenticada ou a aprovação verificável futura.
