@@ -10,7 +10,9 @@ import io.void.core.model.AuditLog
 import io.void.core.model.AutonomyLevel
 import io.void.core.model.Plan
 import io.void.core.model.Step
+import io.void.core.model.StepStatus
 import io.void.core.model.Task
+import io.void.core.model.TaskStatus
 import io.void.core.model.ToolDescriptor
 import java.time.Clock
 import java.time.Instant
@@ -48,8 +50,10 @@ class PlanningAgentTest {
     assertEquals("pending_review", success.output["status"])
     assertEquals(800L, receivedMeta?.latencyBudgetMs)
     assertEquals(3L, receivedMeta?.costBudgetCents)
-    assertEquals(task, persistence.tasks[task.taskId])
+    assertEquals(TaskStatus.PENDING_REVIEW, persistence.tasks[task.taskId]?.status)
+    assertEquals(TaskStatus.PENDING_REVIEW.toString(), success.output["task_status"])
     assertEquals("void-planner", persistence.plans["plan-1"]?.createdBy)
+    assertEquals(StepStatus.PENDING_REVIEW, persistence.plans["plan-1"]?.steps?.single()?.status)
     assertEquals(true, persistence.plans["plan-1"]?.metadata?.get("proposal_only"))
     assertEquals("plan_proposed", persistence.audit.single().action)
     assertEquals(Instant.parse("2026-10-21T12:00:00Z"), persistence.audit.single().timestamp)
@@ -69,6 +73,32 @@ class PlanningAgentTest {
     assertTrue(persistence.tasks.isEmpty())
   }
 
+  @Test fun rejectsTaskOutsidePlanningBeforeModelOrPersistence() = kotlinx.coroutines.test.runTest {
+    val persistence = FakePersistence()
+    var routerCalled = false
+    val agent = PlanningAgent(generator = { _, _ -> error("must not generate") })
+
+    val result = agent.handleTask(task.copy(status = TaskStatus.PENDING_REVIEW), fakeContext(persistence) { routerCalled = true })
+
+    val failure = assertIs<io.void.core.contract.AgentResult.Failure>(result)
+    assertEquals("planning agent requires a task in planning state", failure.reason)
+    assertTrue(!routerCalled)
+    assertTrue(persistence.tasks.isEmpty())
+  }
+
+  @Test fun rejectsStepOutsidePendingReviewBeforePersistence() = kotlinx.coroutines.test.runTest {
+    val persistence = FakePersistence()
+    val agent = PlanningAgent(
+      generator = { _, _ -> listOf(Step("step-1", "Review", "planner", status = StepStatus.APPROVED)) }
+    )
+
+    val result = agent.handleTask(task, fakeContext(persistence) {})
+
+    val failure = assertIs<io.void.core.contract.AgentResult.Failure>(result)
+    assertTrue(failure.reason.contains("pending review"))
+    assertTrue(persistence.tasks.isEmpty())
+  }
+
   @Test fun rejectsAmbiguousOrIncompleteStepsBeforePersistence() = kotlinx.coroutines.test.runTest {
     val invalidPlans = listOf(
       listOf(Step(" ", "Reunir matérias", "planner")) to "identifiers",
@@ -79,9 +109,7 @@ class PlanningAgentTest {
     invalidPlans.forEach { (steps, expectedReason) ->
       val persistence = FakePersistence()
       val agent = PlanningAgent(generator = { _, _ -> steps })
-
       val result = agent.handleTask(task, fakeContext(persistence) {})
-
       val failure = assertIs<io.void.core.contract.AgentResult.Failure>(result)
       assertTrue(failure.reason.contains(expectedReason))
       assertTrue(persistence.tasks.isEmpty())
@@ -92,12 +120,8 @@ class PlanningAgentTest {
 
   @Test fun rejectsToolBearingPlanAndDoesNotPersistIt() = kotlinx.coroutines.test.runTest {
     val persistence = FakePersistence()
-    val agent = PlanningAgent(
-      generator = { _, _ -> listOf(Step("step-1", "Enviar", "planner", tool = "send-message")) }
-    )
-
+    val agent = PlanningAgent(generator = { _, _ -> listOf(Step("step-1", "Enviar", "planner", tool = "send-message")) })
     val result = agent.handleTask(task, fakeContext(persistence) {})
-
     val failure = assertIs<io.void.core.contract.AgentResult.Failure>(result)
     assertTrue(failure.reason.contains("cannot propose executable tools"))
     assertTrue(persistence.plans.isEmpty())
