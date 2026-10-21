@@ -1,69 +1,162 @@
 # Roadmap do VOID AI
 
-Direção proposta, sem prazos prometidos. Caixas representam critérios de conclusão verificáveis, não funcionalidades presumidas. O VOID segue como núcleo Kotlin/JVM Android-first: planos são revisáveis, e não existe execução automática de ferramentas.
+> **Direção do projeto:** construir um planejador de IA Android-first que transforma objetivos em propostas revisáveis. O VOID só avança para execução quando os controles, evidências e limites dessa etapa existirem e forem testados.
 
-## Estado confirmado
+| Agora | Depois | Não ainda |
+| --- | --- | --- |
+| Propostas revisáveis | Simulações controladas | Conectores e contas reais |
+| Estados auditáveis | Interface Android | Execução automática |
+| PolicyGate restritivo | Aprovação verificável | Autorização por dados do cliente |
 
-- O agente `void-planner` transforma uma tarefa em proposta persistida com status `pending_review`, trilha de auditoria e sem chamar ferramentas.
-- Propostas vazias, etapas sem ID, IDs duplicados, descrições/responsáveis vazios e qualquer etapa com `tool` são rejeitados antes de persistência.
-- A verificação do GitHub Actions no commit `132fde8` concluiu com sucesso em 21/10/2026. Ela cobre `:core:test` e os schemas Draft-07 offline. Consulte resultados reais em [Actions](https://github.com/wandersonsaint014-hue/VOID-IA-public/actions).
-- Ainda não há aplicativo Android instalável, servidor, executor, conector real, aprovação verificável ou autenticação de pessoas.
+## Onde estamos
+
+O núcleo atual já prova o fluxo de **planejamento**, não de execução:
+
+- `void-planner` transforma uma tarefa em plano persistível com status `pending_review`.
+- Tarefa, plano e etapa possuem estados explícitos, transições restritas e estados terminais.
+- O `PolicyGate` avalia pedidos e **nega por padrão**. Ele não executa ferramentas.
+- Contratos Kotlin, JSON Schema Draft-07 e serialização são verificados no CI.
+- Propostas inválidas são rejeitadas antes de persistência: vazias, com IDs ausentes ou duplicados, textos obrigatórios vazios ou etapas com `tool`.
+
+O que ainda **não** existe: aplicativo Android instalável, servidor, autenticação, aprovação verificável, executor, conector externo ou ferramenta real.
+
+[Ver contratos](CONTRACTS.md) · [Ver segurança](SECURITY_REVIEW.md) · [Ver execuções da CI](https://github.com/wandersonsaint014-hue/VOID-IA-public/actions)
+
+## Ordem de entrega
+
+```mermaid
+flowchart LR
+    A[1. Base reproduzível] --> B[2. Controle verificável]
+    B --> C[3. Simulação segura]
+    C --> D[4. Interface Android]
+    D --> E[5. Uma integração real]
+```
+
+Cada fase depende da anterior. Não há atalho de planejamento para conector real, porque é justamente aí que projetos simpáticos ganham cicatrizes caras.
+
+---
 
 ## 1. Base reproduzível
 
-- [ ] Adicionar Gradle Wrapper revisado em mudança técnica própria.
-- [x] Executar e registrar verificação do núcleo e schemas no CI em checkout limpo.
-- [x] Cobrir casos negativos do planejador seguro e impedir persistência de propostas inválidas.
-- [ ] Ampliar compatibilidade Kotlin/JSON/OpenAPI e casos negativos fora do planejador.
-- [ ] Revisar dependências e atualizações sem prometer ausência total de vulnerabilidades.
+**Objetivo:** qualquer pessoa conseguir validar o núcleo sem adivinhar versões ou depender de configuração local implícita.
 
-**Pronto quando:** outra pessoa reproduzir ambiente e testes com instruções verificadas, sem depender de Gradle instalado globalmente.
+**Em andamento**
+
+- [x] Executar testes Kotlin e schemas no GitHub Actions em checkout limpo.
+- [x] Cobrir rejeições do planejador e impedir persistência de propostas inválidas.
+- [x] Validar contratos de serialização e schemas offline.
+- [ ] Adicionar Gradle Wrapper em alteração técnica isolada.
+- [ ] Ampliar testes de compatibilidade Kotlin, JSON e OpenAPI.
+- [ ] Revisar dependências sem prometer ausência total de vulnerabilidades.
+
+**Pronto quando**
+
+> Uma pessoa consegue clonar, executar verificações documentadas e reproduzir o resultado sem Gradle instalado globalmente.
+
+**Não libera ainda:** aplicativo, servidor, autenticação ou execução de ferramentas.
+
+---
 
 ## 2. Controle antes dos conectores
 
+**Objetivo:** garantir que uma proposta seja rastreável e que nenhuma decisão do cliente possa virar autorização por acidente.
+
+**Em andamento**
+
 - [x] Produzir apenas planos revisáveis, auditáveis e sem ferramentas executáveis.
-- [x] Formalizar estados e transições de tarefa, plano e etapa para proposta e revisão, sem execução automática.
-- [x] Implementar `PolicyGate` somente avaliador: negar por padrão e registrar decisão, sem chamar ferramentas.
-- [ ] Implementar aprovação verificável: identidade autenticada, alvo, ação/argumentos/destino normalizados, expiração, revogação e uso único.
-- [ ] Definir idempotência, limites de tentativas, timeout e payload na política de runtime.
-- [ ] Separar falha confirmada, efeito incerto e cancelamento.
-- [ ] Tratar conteúdo externo como dado não confiável.
+- [x] Formalizar estados de `Task`, `Plan` e `Step`.
+- [x] Restringir transições inválidas e bloquear retorno de estados terminais.
+- [x] Implementar `PolicyGate` como avaliador com negação por padrão.
+- [ ] Implementar aprovação verificável vinculada a identidade autenticada.
+- [ ] Vincular aprovação a ação, argumentos normalizados, destino, expiração e uso único.
+- [ ] Implementar revogação e impedir repetição de efeitos sensíveis.
+- [ ] Definir limites de payload, tentativas, timeout, idempotência e orçamento no runtime.
+- [ ] Modelar falha confirmada, efeito incerto e cancelamento.
+- [ ] Tratar conteúdo externo e resposta de modelo como dados não confiáveis.
 
-**Pronto quando:** testes rejeitarem ação não autorizada, aprovação alterada, expirada, revogada ou já consumida, e repetição sensível indevida. Até lá, conectores e execução permanecem fora do produto.
+**Pronto quando**
 
-## 3. Fluxo com ferramentas simuladas
+> Testes rejeitam ação não autorizada, aprovação alterada, expirada, revogada ou já consumida. Uma aprovação nunca supera uma decisão negativa da política.
 
-- [ ] Implementar runner mínimo somente para ferramentas simuladas, atrás do `PolicyGate`.
-- [ ] Persistir estado relevante e retomar após reinício.
-- [ ] Redigir dados sensíveis na auditoria e limitar recursos.
-- [ ] Testar cancelamento parcial e reconciliação de efeito incerto.
+**Regra inegociável:** aprovar uma proposta não executa nada.
 
-**Pronto quando:** sucesso, falha, incerteza e interrupção tiverem evidências e recuperação reproduzíveis, sem contas reais.
+---
+
+## 3. Simulação segura
+
+**Objetivo:** exercitar o ciclo completo de decisão e resultado sem tocar em contas, mensagens, pagamentos ou serviços externos.
+
+**Planejado**
+
+- [ ] Criar um runner mínimo restrito a ferramentas simuladas.
+- [ ] Reavaliar `PolicyGate` imediatamente antes de cada efeito simulado.
+- [ ] Persistir estado relevante e retomar com segurança após reinício.
+- [ ] Registrar evidências sem expor segredos ou dados pessoais.
+- [ ] Limitar recursos, entradas, tempo e tentativas.
+- [ ] Testar cancelamento parcial, falha confirmada e efeito incerto.
+- [ ] Criar testes de reconciliação e recuperação reproduzíveis.
+
+**Pronto quando**
+
+> Sucesso, falha, incerteza e interrupção possuem evidência, estado final compreensível e recuperação testada, tudo sem conta real.
+
+**Não libera ainda:** conectores de terceiros ou efeitos fora do ambiente controlado.
+
+---
 
 ## 4. Interface Android preservada
 
-- [ ] Implementar as seis telas seguindo a [direção visual](INTERFACE.md).
-- [ ] Expor estado observável e receber ações por interfaces claras.
-- [ ] Validar acessibilidade e ciclo de vida.
-- [ ] Conectar primeiro ao fluxo simulado sem efeitos reais.
+**Objetivo:** levar o fluxo seguro à interface sem esconder decisões importantes ou perder estado no ciclo de vida do aplicativo.
 
-**Pronto quando:** fluxo completo testado sem perda de decisões importantes após reinício.
+**Planejado**
 
-## 5. Uma ferramenta real sob controle
+- [ ] Implementar as seis telas da [direção visual](INTERFACE.md).
+- [ ] Mostrar proposta, limites, estado e decisão de forma compreensível.
+- [ ] Conectar a interface primeiro ao fluxo simulado.
+- [ ] Preservar decisões e estado após reinício.
+- [ ] Validar acessibilidade, leitura e navegação por teclado/tecnologias assistivas quando aplicável.
+- [ ] Testar ciclo de vida Android e erros de rede simulados.
 
-- [ ] Escolher caso pequeno, de baixo risco e escopo mínimo.
-- [ ] Revisar autenticação, autorização, segredos e dados.
-- [ ] Exigir aprovação específica para efeitos sensíveis.
-- [ ] Publicar evidências e instruções antes de oferecer instalação.
+**Pronto quando**
 
-**Pronto quando:** limites explícitos, recuperação testada e autorização do mantenedor para distribuição.
+> Uma pessoa percorre o fluxo completo de proposta a resultado simulado sem perder decisões importantes após reinício.
+
+---
+
+## 5. Uma integração real, sob controle
+
+**Objetivo:** escolher **um** caso pequeno e reversível, provando controles antes de ampliar alcance.
+
+**Só começa após as fases anteriores.**
+
+- [ ] Selecionar uma ferramenta de baixo risco, escopo mínimo e recuperação possível.
+- [ ] Implementar autenticação e autorização no servidor.
+- [ ] Armazenar segredos fora de logs, auditoria e clientes.
+- [ ] Exigir aprovação específica para ação, argumentos e destino.
+- [ ] Criar limites, idempotência, timeout, revogação e observabilidade.
+- [ ] Testar abuso, falha, incerteza, cancelamento e recuperação.
+- [ ] Publicar instruções, limitações e evidências antes de distribuição.
+
+**Pronto quando**
+
+> Os limites são explícitos, a autorização é verificável, a recuperação foi testada e o mantenedor aprovou a distribuição.
+
+---
 
 ## Próxima mudança recomendada
 
-Formalizar estados e transições de tarefa, plano e etapa. O `PolicyGate` v1 já nega por padrão e registra decisões auditáveis; ele não importa ou invoca `ToolRunner`.
+**Adicionar o Gradle Wrapper.**
 
-## Participar
+É uma melhoria pequena, isolada e de alto impacto para deixar o projeto reproduzível. Depois dela, a prioridade é ampliar testes de contratos antes de iniciar qualquer infraestrutura de aprovação ou execução.
 
-Abra issue com problema, benefício, impacto nos contratos, risco e critério de teste. Preserve a direção visual ou justifique a alternativa. Multiagentes/frameworks exigem comparação com solução mais simples.
+## Como contribuir
 
-Referências: [pesquisa técnica](RESEARCH.md) e [revisão de segurança](SECURITY_REVIEW.md).
+Antes de abrir uma mudança, descreva:
+
+1. o problema e o benefício;
+2. o impacto nos contratos e estados;
+3. os riscos, inclusive de segurança e privacidade;
+4. como a alteração será testada;
+5. o que a mudança **não** faz.
+
+Frameworks multiagente, conectores e automações precisam justificar por que a solução simples não basta. Leia [CONTRIBUTING.md](../CONTRIBUTING.md), [pesquisa técnica](RESEARCH.md) e [revisão de segurança](SECURITY_REVIEW.md).
