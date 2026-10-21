@@ -82,7 +82,10 @@ class PlanningAgent(
 
   private fun validateProposal(steps: List<Step>) {
     require(steps.isNotEmpty()) { "plan must contain at least one step" }
+    require(steps.all { it.stepId.isNotBlank() }) { "plan steps must have identifiers" }
+    require(steps.map { it.stepId }.distinct().size == steps.size) { "plan step identifiers must be unique" }
     require(steps.all { it.description.isNotBlank() }) { "plan steps must have descriptions" }
+    require(steps.all { it.responsible.isNotBlank() }) { "plan steps must have responsible parties" }
     require(steps.all { it.tool == null }) {
       "planning agent cannot propose executable tools in the first runtime"
     }

@@ -69,6 +69,27 @@ class PlanningAgentTest {
     assertTrue(persistence.tasks.isEmpty())
   }
 
+  @Test fun rejectsAmbiguousOrIncompleteStepsBeforePersistence() = kotlinx.coroutines.test.runTest {
+    val invalidPlans = listOf(
+      listOf(Step(" ", "Reunir matérias", "planner")) to "identifiers",
+      listOf(Step("step-1", "Reunir matérias", "planner"), Step("step-1", "Revisar matérias", "planner")) to "unique",
+      listOf(Step("step-1", "Reunir matérias", " ")) to "responsible"
+    )
+
+    invalidPlans.forEach { (steps, expectedReason) ->
+      val persistence = FakePersistence()
+      val agent = PlanningAgent(generator = { _, _ -> steps })
+
+      val result = agent.handleTask(task, fakeContext(persistence) {})
+
+      val failure = assertIs<io.void.core.contract.AgentResult.Failure>(result)
+      assertTrue(failure.reason.contains(expectedReason))
+      assertTrue(persistence.tasks.isEmpty())
+      assertTrue(persistence.plans.isEmpty())
+      assertTrue(persistence.audit.isEmpty())
+    }
+  }
+
   @Test fun rejectsToolBearingPlanAndDoesNotPersistIt() = kotlinx.coroutines.test.runTest {
     val persistence = FakePersistence()
     val agent = PlanningAgent(
