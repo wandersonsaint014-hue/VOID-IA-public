@@ -10,6 +10,9 @@ class CoreModelsTest {
   @Test fun taskDefaultsAreConservative() {
     val task = Task("task-1", "user-1", Instant.EPOCH, "Review")
     assertEquals(AutonomyLevel.LOW, task.autonomyLevel)
+    assertEquals(TaskStatus.PLANNING, task.status)
+    assertEquals(PlanStatus.PENDING_REVIEW, Plan("plan-1", "task-1", listOf(Step("step-1", "Review", "core"))).status)
+    assertEquals(StepStatus.PENDING_REVIEW, Step("step-1", "Review", "core").status)
     assertTrue(task.context.isEmpty())
     assertTrue(task.constraints.isEmpty())
   }

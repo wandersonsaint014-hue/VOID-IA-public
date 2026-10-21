@@ -16,6 +16,7 @@ class SerializationContractTest {
   val task = Task("task-1", "user-1", Instant.parse("2026-01-02T03:04:05Z"), "Review", autonomyLevel = AutonomyLevel.HIGH)
   val json = mapper.writeValueAsString(task)
   assertEquals("high", mapper.readTree(json)["autonomy_level"].asText())
+  assertEquals("planning", mapper.readTree(json)["status"].asText())
   assertEquals("2026-01-02T03:04:05Z", mapper.readTree(json)["created_at"].asText())
   assertEquals(task, mapper.readValue<Task>(json))
  }
@@ -24,6 +25,8 @@ class SerializationContractTest {
   val plan = Plan("plan-1", "task-1", listOf(Step("step-1", "Inspect", "core")))
   val json = mapper.writeValueAsString(plan)
   assertFalse(mapper.readTree(json).has("created_by"))
+  assertEquals("pending_review", mapper.readTree(json)["status"].asText())
+  assertEquals("pending_review", mapper.readTree(json)["steps"][0]["status"].asText())
   assertEquals(plan, mapper.readValue<Plan>(json))
  }
 
