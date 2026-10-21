@@ -23,7 +23,7 @@ Direção proposta, sem prazos prometidos. Caixas representam critérios de conc
 
 - [x] Produzir apenas planos revisáveis, auditáveis e sem ferramentas executáveis.
 - [ ] Formalizar estados e transições de tarefa, plano e etapa.
-- [ ] Implementar `PolicyGate` somente avaliador: negar por padrão e registrar decisão, sem chamar ferramentas.
+- [x] Implementar `PolicyGate` somente avaliador: negar por padrão e registrar decisão, sem chamar ferramentas.
 - [ ] Vincular aprovação a identidade autenticada, ação, argumentos, destino e expiração.
 - [ ] Definir idempotência, limites de tentativas, timeout e payload na política de runtime.
 - [ ] Separar falha confirmada, efeito incerto e cancelamento.
@@ -60,7 +60,7 @@ Direção proposta, sem prazos prometidos. Caixas representam critérios de conc
 
 ## Próxima mudança recomendada
 
-Criar o contrato e os testes de um `PolicyGate` estritamente avaliador. A primeira versão deve receber uma solicitação de ação e devolver `allow` ou `deny` com motivos auditáveis; não deve importar ou invocar `ToolRunner`.
+Formalizar estados e transições de tarefa, plano e etapa. O `PolicyGate` v1 já nega por padrão e registra decisões auditáveis; ele não importa ou invoca `ToolRunner`.
 
 ## Participar
 

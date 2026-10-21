@@ -7,3 +7,7 @@ The JSON schemas are Draft-07 documents with stable `https://void.invalid/schema
 ## Deliberately out of scope
 
 This does not implement a runner, authorization, approvals, Android persistence, or Android UI. Future Android work must enforce authenticated identity and server-side authorization rather than trust request `user_id`, `caller` or `permissions`; gate tools before execution; bound payloads/retries/timeouts at the runner policy layer; and redact secrets/PII before audit persistence. See `docs/SECURITY_REVIEW.md` for the existing design-risk inventory.
+
+## Policy gate v1
+
+`PolicyGate` is an evaluation boundary, not a runner. `DenyByDefaultPolicyGate` returns a denial for every request and appends a `policy_denied` audit record with the requested action, decision reasons and policy version. It intentionally does not include request arguments or destination in audit data, and it has no dependency on `ToolRunner`. A future allow path requires authenticated identity, a bound approval, action arguments, destination, expiry and dedicated tests before any tool can be invoked.
