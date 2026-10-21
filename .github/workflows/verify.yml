@@ -18,9 +18,39 @@ jobs:
         with:
           gradle-version: 8.14.4
           cache-read-only: true
-      - run: gradle :core:test --no-daemon --console=plain
+      - name: Check report validator
+        run: python3 -m unittest discover -s scripts -p 'test_summarize_test_results.py' -v
+      - name: Remove previous test evidence
+        run: rm -rf core/build/test-results/test core/build/reports/tests/test
+      - name: Run Kotlin tests
+        id: kotlin
+        run: gradle :core:test --rerun-tasks --no-build-cache --no-daemon --console=plain --max-workers=1
+      - name: Summarize Kotlin test evidence
+        if: ${{ !cancelled() }}
+        env:
+          KOTLIN_OUTCOME: ${{ steps.kotlin.outcome }}
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: python3 scripts/summarize_test_results.py
+      - name: Upload Kotlin test reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: core-tests-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            core/build/test-results/test/TEST-*.xml
+            core/build/reports/tests/test/**
+          if-no-files-found: error
+          retention-days: 7
       - name: Verify JSON schemas offline
+        id: schemas
+        if: ${{ !cancelled() }}
         run: |
           python3 -m venv .schema-venv
           .schema-venv/bin/python -m pip install --disable-pip-version-check jsonschema referencing
           .schema-venv/bin/python scripts/verify_schemas.py
+      - name: Summarize schema result
+        if: ${{ !cancelled() }}
+        env:
+          SCHEMA_OUTCOME: ${{ steps.schemas.outcome }}
+        run: |
+          printf '\n## Schemas JSON\n\nResultado independente: `%s`\n' "$SCHEMA_OUTCOME" >> "$GITHUB_STEP_SUMMARY"
