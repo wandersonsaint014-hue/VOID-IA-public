@@ -2,6 +2,7 @@ package io.void.core.agent
 
 import io.void.core.contract.Agent
 import io.void.core.contract.AgentContext
+import io.void.core.contract.AgentFailureKind
 import io.void.core.contract.AgentResult
 import io.void.core.model.AuditLog
 import io.void.core.model.Task
@@ -139,13 +140,13 @@ class DecisionLoopAgent(
     observations: List<AgentObservation>
   ): AgentResult {
     if (task.status != TaskStatus.PLANNING) {
-      return AgentResult.Failure("decision loop requires a task in planning state")
+      return failure("decision loop requires a task in planning state", AgentFailureKind.INVALID_INPUT)
     }
     if (task.objective.isBlank()) {
-      return AgentResult.Failure("task objective must not be blank")
+      return failure("task objective must not be blank", AgentFailureKind.INVALID_INPUT)
     }
     if (observations.size > maxIterations) {
-      return AgentResult.Failure("too many observations for decision loop")
+      return failure("too many observations for decision loop", AgentFailureKind.INVALID_INPUT)
     }
 
     return try {
@@ -184,7 +185,7 @@ class DecisionLoopAgent(
             if (decision.observation in currentObservations) {
               val transition = stateMachine.stopForGuardFailure("repeated_observation")
               audit(context, task.taskId, "decision_loop_stopped", mapOf("reason" to "repeated_observation", "iteration" to index + 1) + transition.auditFields())
-              return AgentResult.Failure("decision loop repeated without a new observation")
+              return failure("decision loop repeated without a new observation", AgentFailureKind.GUARDRAIL)
             }
             val observed = stateMachine.apply(decision, hasNewObservation = true)
             audit(context, task.taskId, "observation_recorded", mapOf("iteration" to index + 1, "kind" to decision.observation.kind) + observed.auditFields())
@@ -200,19 +201,29 @@ class DecisionLoopAgent(
           is AgentDecision.Fail -> {
             val transition = stateMachine.apply(decision)
             audit(context, task.taskId, "agent_failed", mapOf("iteration" to index + 1, "reason_length" to decision.reason.length) + transition.auditFields())
-            return AgentResult.Failure(decision.reason)
+            return failure(decision.reason, AgentFailureKind.AGENT_STOPPED)
           }
         }
       }
       val transition = stateMachine.stopAtIterationLimit()
       audit(context, task.taskId, "decision_loop_stopped", mapOf("reason" to "iteration_limit", "max_iterations" to maxIterations) + transition.auditFields())
-      AgentResult.Failure("decision loop iteration limit reached")
+      failure("decision loop iteration limit reached", AgentFailureKind.GUARDRAIL)
     } catch (error: IllegalArgumentException) {
-      AgentResult.Failure(error.message ?: "invalid agent decision")
+      failure("invalid agent decision", AgentFailureKind.INVALID_INPUT)
     } catch (error: Exception) {
-      AgentResult.Failure("unable to decide next step", mapOf("error_type" to error::class.simpleName.orEmpty()))
+      failure("unable to decide next step", AgentFailureKind.INTERNAL_ERROR, error)
     }
   }
+
+  private fun failure(
+    reason: String,
+    kind: AgentFailureKind,
+    error: Exception? = null
+  ): AgentResult.Failure = AgentResult.Failure(
+    reason = reason,
+    kind = kind,
+    details = error?.let { mapOf("error_type" to it::class.simpleName.orEmpty()) }
+  )
 
   private suspend fun audit(context: AgentContext, taskId: String, action: String, outcome: Map<String, Any>) {
     context.persistence.appendAudit(
