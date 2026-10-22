@@ -10,15 +10,17 @@ O agente `void-planner` produz somente propostas revisáveis. O `PolicyGate` v1 
 
 `VoidObjectMapper` usa propriedades `snake_case`, enums em minúsculas, instantes ISO-8601 e omite campos opcionais nulos. Na desserialização, campos desconhecidos são rejeitados.
 
-Os schemas usam Draft-07 e IDs estáveis em `https://void.invalid/schemas/*.json`. A verificação no CI resolve referências localmente, sem rede. Kotlin e schemas rejeitam identificadores e textos obrigatórios vazios; `Plan.steps` não pode ser vazio; `Step` também rejeita tentativas negativas e timeout não positivo. Limites superiores de tamanho, tentativas e timeout continuam sendo responsabilidade de uma política de runtime futura.
+Os schemas usam Draft-07 e IDs estáveis em `https://void.invalid/schemas/*.json`. A verificação no CI resolve referências localmente, sem rede. Kotlin e schemas rejeitam identificadores e textos obrigatórios vazios; `Plan.steps` não pode ser vazio; `Step` também rejeita tentativas negativas e timeout não positivo. O runtime simulado também limita profundidade, mapas, coleções, strings e tipos aceitos antes de gerar hashes ou chamar a ferramenta. Limites de tentativas, timeout, orçamento e concorrência continuam sendo responsabilidade do runtime persistente futuro.
 
-## Aprovações futuras
+## Propostas de ação, capacidades e aprovação
 
-Não existe aprovação implementada ou verificável neste repositório. O caminho `POST /api/v1/tasks/{task_id}/approve` está reservado e retorna `501`; ele não aceita nem transforma dados do cliente em autorização.
+Além de planos, o núcleo modela uma `ActionProposal`: uma proposta curta para **uma** ação potencial, com resumo humano, capacidades permitidas e hashes SHA-256 de argumentos e destino. O texto bruto dos argumentos e do destino não é colocado no contrato nem na auditoria só para formar esse vínculo.
 
-Uma aprovação futura deverá ser criada no servidor a partir da identidade autenticada e conter, no mínimo: alvo da tarefa/plano/etapa, ação normalizada, hash dos argumentos normalizados e do destino, escopo de autorização, versão da política, instante de emissão, expiração, estado de uso único e estado de revogação. O conteúdo sensível dos argumentos e do destino não deve ir para auditoria apenas para formar esse vínculo.
+`ActionProposalService` só aceita um `VerifiedPrincipal` fornecido pela borda confiável. Ele ignora `ToolCall.caller`, resolve cada capacidade em um `CapabilityRegistry`, aplica `CapabilityPolicy`, limita dados de entrada e persiste uma proposta `awaiting_review`. O serviço não recebe uma `Tool`, portanto não pode executar efeitos.
 
-Aprovar não executa nada e não torna uma ação permitida por si só. Antes de qualquer efeito, um runtime futuro deverá validar propriedade e autorização, confirmar que o vínculo não foi alterado, verificar expiração, consumo e revogação de forma atômica, e avaliar novamente o `PolicyGate`. Uma política que nega continua negando mesmo se houver uma aprovação apresentada.
+A aprovação reavalia a política e chama `ActionReviewStore.approveAndIssue`. Essa operação deve, em uma implementação real, marcar a proposta como aprovada e persistir a `ExecutionAuthorization` numa única transação. A autorização resultante fica vinculada a usuário autenticado, tarefa, ferramenta, ação, argumentos, destino, permissões internas mínimas, versão da política, emissão e expiração.
+
+A interface e os schemas existem no núcleo; ainda não há autenticador, banco Android/servidor, revogação persistida nem emissor de produção. Aprovar não executa nada e não torna uma ação permitida por si só. Antes de qualquer efeito, o runtime ainda deve validar o vínculo, expiração e consumo atômico, e avaliar novamente o `PolicyGate`. Uma política que nega continua negando mesmo se houver uma autorização apresentada.
 
 ## Compatibilidade da API futura
 
@@ -26,7 +28,7 @@ Aprovar não executa nada e não torna uma ação permitida por si só. Antes de
 
 ## Fora de escopo
 
-Este repositório ainda não implementa runner, autorização, aprovações, persistência Android nem UI Android. Conteúdo externo deve ser tratado como não confiável, e auditorias futuras precisam redigir segredos e dados pessoais antes de persistir. Consulte a [revisão de segurança](SECURITY_REVIEW.md) para riscos abertos.
+Este repositório implementa somente um runner para `SimulatedTool`, sem conectores ou efeitos externos. Ele exige uma autorização emitida por uma borda confiável, vinculada a usuário, tarefa, ferramenta, ação, argumentos, destino, expiração e uso único, além de uma reavaliação do `PolicyGate`. Não implementa servidor, autenticação, emissão real de autorizações, persistência Android nem UI Android. Conteúdo externo deve ser tratado como não confiável, e auditorias precisam redigir segredos e dados pessoais antes de persistir. Consulte [o runtime simulado](SIMULATION_RUNTIME.md) e a [revisão de segurança](SECURITY_REVIEW.md).
 
 ## Estados e transições
 
