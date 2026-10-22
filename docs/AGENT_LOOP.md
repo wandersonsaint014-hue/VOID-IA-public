@@ -15,7 +15,8 @@ flowchart LR
     C -->|planejar| F[void-planner]
     C -->|propor ação| G[ActionProposalService]
     C -->|aguardar revisão| H[Espera]
-    C -->|observar| B
+    C -->|observar| O[Observação nova]
+    O --> B
     G --> I[Política e revisão]
     I --> J[Autorização]
     J --> K[Simulação protegida]
@@ -45,6 +46,14 @@ Ele retorna uma `AgentDecision` validada pelo loop:
 | `Fail` | encerra com motivo controlado |
 
 `ProposeAction` não emite autorização, não acessa `ToolRegistry` e não executa nada. O chamador confiável deve encaminhar a intenção para `ActionProposalService`; daí em diante continuam obrigatórios capacidade permitida, política atual, revisão humana, autorização vinculada e `GuardedSimulationRunner`.
+
+## Máquina de estados explícita
+
+Cada execução inicia em `deciding`. A decisão produz uma transição auditável para `responded`, `awaiting_clarification`, `planning`, `action_proposed`, `waiting_review`, `completed` ou `failed`. Todos esses estados são terminais para aquela execução. Não existe estado de execução de ferramenta.
+
+`Continue` é a única transição intermediária: `deciding → observing → deciding`. Ela só é permitida quando há observação nova. Repetição encerra em `failed`; esgotar o teto de iterações encerra em `iteration_limit`. A auditoria registra somente origem, destino e razão da transição, sem conteúdo sensível.
+
+O adapter atual é pequeno e sem dependência externa. `KStateMachine` permanece como referência para quando o VOID realmente precisar de estados hierárquicos, persistência de estado ou regiões paralelas. Assim, a API e as regras do domínio continuam pertencendo ao VOID.
 
 ## Limites e falha segura
 
