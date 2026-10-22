@@ -49,9 +49,9 @@ Ele retorna uma `AgentDecision` validada pelo loop:
 
 ## Máquina de estados explícita
 
-Cada execução inicia em `deciding`. A decisão produz uma transição auditável para `responded`, `awaiting_clarification`, `planning`, `action_proposed`, `waiting_review`, `completed` ou `failed`. Todos esses estados são terminais para aquela execução. Não existe estado de execução de ferramenta.
+Cada execução inicia em `deciding`. A decisão produz uma transição auditável para `responded`, `awaiting_clarification`, `planning`, `action_proposed`, `waiting_review`, `completed` ou `failed`. Um bloqueio de guarda termina em `blocked`; esgotar o teto termina em `iteration_limit`. Todos esses estados são terminais para aquela execução. Não existe estado de execução de ferramenta.
 
-`Continue` é a única transição intermediária: `deciding → observing → deciding`. Ela só é permitida quando há observação nova. Repetição encerra em `failed`; esgotar o teto de iterações encerra em `iteration_limit`. A auditoria registra somente origem, destino e razão da transição, sem conteúdo sensível.
+`Continue` é a única transição intermediária: `deciding → observing → deciding`. Ela só é permitida quando há observação nova. Repetição encerra em `blocked`, não como defeito do agente. A auditoria registra somente origem, destino e razão da transição, sem conteúdo sensível.
 
 O adapter atual é pequeno e sem dependência externa. `KStateMachine` permanece como referência para quando o VOID realmente precisar de estados hierárquicos, persistência de estado ou regiões paralelas. Assim, a API e as regras do domínio continuam pertencendo ao VOID.
 
@@ -62,7 +62,8 @@ O adapter atual é pequeno e sem dependência externa. `KStateMachine` permanece
 - Observações iniciais maiores que o limite são rejeitadas.
 - Textos, referências e metadados recebidos pelo loop são limitados; metadados aceitam apenas tipos simples, estruturas pequenas e números finitos.
 - Toda decisão terminal e toda observação adicionada geram auditoria mínima, sem argumentos, destino, prompts ou identidade bruta.
-- Uma falha do decisor é devolvida como `unable_to_decide_next_step`; ela não aciona fallback de ferramenta.
+- `AgentResult.Failure.kind` separa `INVALID_INPUT`, `GUARDRAIL`, `AGENT_STOPPED`, `DEPENDENCY_FAILURE` e `INTERNAL_ERROR`, para que o chamador saiba se deve corrigir a entrada, aguardar novo contexto ou investigar uma dependência.
+- Uma falha inesperada do decisor é devolvida como `unable to decide next step`; ela não aciona fallback de ferramenta nem registra a mensagem bruta da exceção.
 
 A persistência de checkpoints, memória local durável, cancelamento, deduplicação e recuperação após reinício continuam fora desta primeira implementação. O loop é deliberadamente pequeno: ele torna o raciocínio do agente testável antes de ampliar autonomia.
 
