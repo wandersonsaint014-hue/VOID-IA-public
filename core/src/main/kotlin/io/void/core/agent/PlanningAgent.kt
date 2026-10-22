@@ -92,20 +92,20 @@ class PlanningAgent(
         evidence = listOf(mapOf("audit_action" to "plan_proposed", "model_id" to model.modelId))
       )
     } catch (error: IllegalArgumentException) {
-      failure(error.message ?: "invalid plan proposal", AgentFailureKind.INVALID_INPUT)
+      failure("invalid plan proposal", AgentFailureKind.INVALID_INPUT, "plan_proposal_invalid")
     } catch (error: Exception) {
-      failure("unable to propose plan", AgentFailureKind.DEPENDENCY_FAILURE, error)
+      failure("unable to propose plan", AgentFailureKind.DEPENDENCY_FAILURE, "plan_dependency_unavailable")
     }
   }
 
   private fun failure(
     reason: String,
     kind: AgentFailureKind,
-    error: Exception? = null
+    errorCode: String? = null
   ): AgentResult.Failure = AgentResult.Failure(
     reason = reason,
     kind = kind,
-    details = error?.let { mapOf("error_type" to it::class.simpleName.orEmpty()) }
+    details = errorCode?.let { mapOf("error_code" to it) }
   )
 
   private fun validateProposal(steps: List<Step>) {
