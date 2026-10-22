@@ -6,6 +6,7 @@ import io.void.core.contract.AgentResult
 import io.void.core.contract.ModelRequestMeta
 import io.void.core.contract.PlanGenerator
 import io.void.core.model.AuditLog
+import io.void.core.model.LifecycleTransitions
 import io.void.core.model.Plan
 import io.void.core.model.Step
 import io.void.core.model.StepStatus
@@ -61,7 +62,7 @@ class PlanningAgent(
           "model_mode" to model.mode
         )
       )
-      val reviewedTask = task.copy(status = TaskStatus.PENDING_REVIEW)
+      val reviewedTask = LifecycleTransitions.task(task, TaskStatus.PENDING_REVIEW)
       context.persistence.saveTask(reviewedTask)
       context.persistence.savePlan(plan)
       context.persistence.appendAudit(
