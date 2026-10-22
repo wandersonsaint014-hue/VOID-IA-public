@@ -1,4 +1,4 @@
-# Security review: 2026-10-20
+# Security review: 2026-10-22
 
 Scope: manual inspection of current public source/contracts, schemas, OpenAPI and build configuration. No production deployment, penetration test, complete Git-history secret scan or validated dependency scan was performed. GitHub secret-scanning tool could not run because the required repository feature was unavailable. Absence of detected secrets is not certification.
 
@@ -11,9 +11,9 @@ Scope: manual inspection of current public source/contracts, schemas, OpenAPI an
 
 ## Open design risks
 
-1. High, conditional on future implementation: caller, userId and permissions in request models are client-controlled. Never trust them for authentication or authorization.
-2. High: the tool runner contract does not enforce a pre-execution policy gate or approval token. No sensitive connectors should ship before this exists and is tested.
-3. Medium: generic maps and arrays lack resource limits; retries/timeouts need bounds.
+1. High, conditional on future implementation: `caller`, `userId` e permissões em requisições são controlados pelo cliente. Nunca usá-los para autenticação ou autorização. `ActionProposalService` exige a abstração `VerifiedPrincipal`, mas a autenticação concreta continua fora do núcleo.
+2. High, reduzido apenas para simulações: `GuardedSimulationRunner` reavalia política e exige autorização vinculada antes de `SimulatedTool`. `ActionProposalService` separa proposta, decisão humana e emissão transacional por interface. Ainda não há identidade autenticada, armazenamento de produção, revogação persistida, conectores ou autorização para efeitos externos.
+3. Medium, reduzido: entradas e destinos do runtime simulado têm limites de profundidade, tamanho, tipos e números finitos antes de hash, política ou ferramenta. Ainda faltam limites persistentes de tentativas, timeout, orçamento e concorrência.
 4. Medium: tool risk/idempotency defaults are optimistic and must not authorize execution.
 5. Medium: arbitrary evidence/outcome objects may leak credentials/PII unless redacted before persistence.
 6. Dependency versions require a complete advisory scan and compatible upgrades; no claim of vulnerability-free dependencies is made.

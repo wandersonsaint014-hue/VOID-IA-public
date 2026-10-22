@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://void.invalid/schemas/execution-authorization.json",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "authorization_id": { "type": "string", "minLength": 1, "pattern": "\\S" },
+    "task_id": { "type": "string", "minLength": 1, "pattern": "\\S" },
+    "tool_id": { "type": "string", "minLength": 1, "pattern": "\\S" },
+    "principal_id": { "type": "string", "minLength": 1, "pattern": "\\S" },
+    "action": { "type": "string", "minLength": 1, "pattern": "\\S" },
+    "arguments_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "destination_digest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "granted_permissions": { "type": "array", "items": { "type": "string", "minLength": 1, "pattern": "\\S" }, "uniqueItems": true },
+    "policy_version": { "type": "string", "minLength": 1, "pattern": "\\S" },
+    "issued_at": { "type": "string", "format": "date-time" },
+    "expires_at": { "type": "string", "format": "date-time" }
+  },
+  "required": ["authorization_id", "task_id", "tool_id", "principal_id", "action", "arguments_digest", "policy_version", "issued_at", "expires_at"]
+}

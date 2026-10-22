@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://void.invalid/schemas/capability.json",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "capability_id": { "type": "string", "minLength": 1, "pattern": "\\S" },
+    "tool_id": { "type": "string", "minLength": 1, "pattern": "\\S" },
+    "operation": { "type": "string", "enum": ["read", "write", "delete", "share", "execute"] },
+    "authorization_permissions": { "type": "array", "items": { "type": "string", "minLength": 1, "pattern": "\\S" }, "uniqueItems": true },
+    "required_android_permissions": { "type": "array", "items": { "type": "string", "minLength": 1, "pattern": "\\S" }, "uniqueItems": true },
+    "requires_network": { "type": "boolean" },
+    "requires_user_review": { "type": "boolean" },
+    "risk_level": { "type": "string", "enum": ["low", "medium", "high"] }
+  },
+  "required": ["capability_id", "tool_id", "operation"]
+}

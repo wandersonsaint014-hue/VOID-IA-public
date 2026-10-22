@@ -1,6 +1,6 @@
 # Roadmap do VOID AI
 
-> **Direção do projeto:** construir um planejador de IA Android-first que transforma objetivos em propostas revisáveis. O VOID só avança para execução quando os controles, evidências e limites dessa etapa existirem e forem testados.
+> **Direção do projeto:** construir um agente de IA Android-first que interpreta objetivos, decide o próximo passo, planeja e propõe ações revisáveis. O VOID só avança para execução quando os controles, evidências e limites dessa etapa existirem e forem testados.
 
 | Agora | Depois | Não ainda |
 | --- | --- | --- |
@@ -67,10 +67,12 @@ Cada fase depende da anterior. Não há atalho de planejamento para conector rea
 - [x] Formalizar estados de `Task`, `Plan` e `Step`.
 - [x] Restringir transições inválidas e bloquear retorno de estados terminais.
 - [x] Implementar `PolicyGate` como avaliador com negação por padrão.
-- [ ] Implementar aprovação verificável vinculada a identidade autenticada.
-- [ ] Vincular aprovação a ação, argumentos normalizados, destino, expiração e uso único.
-- [ ] Implementar revogação e impedir repetição de efeitos sensíveis.
-- [ ] Definir limites de payload, tentativas, timeout, idempotência e orçamento no runtime.
+- [x] Definir autorização verificável para o runtime simulado, vinculada a usuário, tarefa, ferramenta, ação, argumentos, destino, expiração e uso único.
+- [x] Modelar proposta de ação, capacidade permitida, revisão humana e contrato transacional de emissão vinculada a `VerifiedPrincipal`.
+- [x] Limitar profundidade, tamanho e tipos dos payloads no runtime simulado.
+- [ ] Implementar autenticação real, armazenamento Android/servidor e emissão vinculada a identidade autenticada.
+- [ ] Implementar revogação persistida e impedir repetição de efeitos sensíveis.
+- [ ] Definir limites persistentes de tentativas, timeout, idempotência, concorrência e orçamento no runtime.
 - [ ] Modelar falha confirmada, efeito incerto e cancelamento.
 - [ ] Tratar conteúdo externo e resposta de modelo como dados não confiáveis.
 
@@ -88,11 +90,13 @@ Cada fase depende da anterior. Não há atalho de planejamento para conector rea
 
 **Planejado**
 
-- [ ] Criar um runner mínimo restrito a ferramentas simuladas.
-- [ ] Reavaliar `PolicyGate` imediatamente antes de cada efeito simulado.
+- [x] Criar um runner mínimo restrito a ferramentas simuladas.
+- [x] Reavaliar `PolicyGate` imediatamente antes de cada efeito simulado.
+- [x] Vincular a simulação a autorização de uso único, expiração, usuário, tarefa, ferramenta, ação, argumentos e destino.
 - [ ] Persistir estado relevante e retomar com segurança após reinício.
 - [ ] Registrar evidências sem expor segredos ou dados pessoais.
-- [ ] Limitar recursos, entradas, tempo e tentativas.
+- [x] Limitar estrutura, tamanho e tipos das entradas antes do hash e da simulação.
+- [ ] Limitar recursos persistentes, tempo, concorrência e tentativas.
 - [ ] Testar cancelamento parcial, falha confirmada e efeito incerto.
 - [ ] Criar testes de reconciliação e recuperação reproduzíveis.
 
@@ -145,9 +149,9 @@ Cada fase depende da anterior. Não há atalho de planejamento para conector rea
 
 ## Próxima mudança recomendada
 
-**Adicionar o Gradle Wrapper.**
+**Adicionar o Gradle Wrapper e implementar o armazenamento transacional Android da simulação.**
 
-É uma melhoria pequena, isolada e de alto impacto para deixar o projeto reproduzível. Depois dela, a prioridade é ampliar testes de contratos antes de iniciar qualquer infraestrutura de aprovação ou execução.
+O Wrapper deixa a validação reproduzível. Em seguida, a prioridade é uma implementação local de `ActionReviewStore` e `ExecutionAuthorizationStore` com Room, consumo único atômico, expiração, revogação e recuperação após reinício. Nenhum conector real entra antes dessa prova.
 
 ## Como contribuir
 
