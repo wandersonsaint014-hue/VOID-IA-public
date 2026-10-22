@@ -71,7 +71,7 @@ class GuardedSimulationRunnerTest {
     val tool = RecordingSimulationTool(descriptor)
     val store = FakeAuthorizationStore(authorize())
     val result = GuardedSimulationRunner(tool, RecordingPolicyGate(true), store, FakePersistence(), clock, InputLimits(maxStringLength = 3))
-      .run(call.copy(inputs = mapOf("title" to "longo")), context, "auth-1", "local://notes")
+      .run(call.copy(inputs = mapOf("x" to "longo")), context, "auth-1", "local://notes")
 
     assertReason("input_string_too_long", result)
     assertEquals(0, tool.executions)

@@ -2,6 +2,7 @@ package io.void.core.agent
 
 import io.void.core.contract.Agent
 import io.void.core.contract.AgentContext
+import io.void.core.contract.AgentFailureKind
 import io.void.core.contract.AgentResult
 import io.void.core.contract.ModelRequestMeta
 import io.void.core.contract.ModelRouter
@@ -103,7 +104,10 @@ class DecisionLoopAgentTest {
 
     val success = assertIs<AgentResult.Success>(result)
     assertEquals("completed", success.output["status"])
-    assertEquals(listOf("observation_recorded", "agent_completed"), persistence.audit.map { it.action })
+    assertEquals(listOf("observation_recorded", "decision_resumed", "agent_completed"), persistence.audit.map { it.action })
+    assertEquals("observing", persistence.audit[0].outcome["state_to"])
+    assertEquals("deciding", persistence.audit[1].outcome["state_to"])
+    assertEquals("completed", persistence.audit[2].outcome["state_to"])
   }
 
   @Test fun stopsRepeatedDecisionWithoutNewObservation() = kotlinx.coroutines.test.runTest {
@@ -119,7 +123,10 @@ class DecisionLoopAgentTest {
 
     val failure = assertIs<AgentResult.Failure>(result)
     assertEquals("decision loop repeated without a new observation", failure.reason)
-    assertEquals(listOf("observation_recorded", "decision_loop_stopped"), persistence.audit.map { it.action })
+    assertEquals(AgentFailureKind.GUARDRAIL, failure.kind)
+    assertEquals(listOf("observation_recorded", "decision_resumed", "decision_loop_stopped"), persistence.audit.map { it.action })
+    assertEquals("blocked", persistence.audit.last().outcome["state_to"])
+    assertEquals("repeated_observation", persistence.audit.last().outcome["transition_reason"])
   }
 
   @Test fun stopsWhenAnEarlierObservationRepeats() = kotlinx.coroutines.test.runTest {
@@ -139,7 +146,10 @@ class DecisionLoopAgentTest {
 
     val failure = assertIs<AgentResult.Failure>(result)
     assertEquals("decision loop repeated without a new observation", failure.reason)
+    assertEquals(AgentFailureKind.GUARDRAIL, failure.kind)
     assertEquals(listOf("decision_loop_stopped"), persistence.audit.map { it.action })
+    assertEquals("blocked", persistence.audit.single().outcome["state_to"])
+    assertEquals("repeated_observation", persistence.audit.single().outcome["transition_reason"])
   }
 
   @Test fun stopsAtIterationLimit() = kotlinx.coroutines.test.runTest {
@@ -156,7 +166,46 @@ class DecisionLoopAgentTest {
 
     val failure = assertIs<AgentResult.Failure>(result)
     assertEquals("decision loop iteration limit reached", failure.reason)
-    assertEquals(listOf("observation_recorded", "observation_recorded", "decision_loop_stopped"), persistence.audit.map { it.action })
+    assertEquals(AgentFailureKind.GUARDRAIL, failure.kind)
+    assertEquals(
+      listOf("observation_recorded", "decision_resumed", "observation_recorded", "decision_resumed", "decision_loop_stopped"),
+      persistence.audit.map { it.action }
+    )
+    assertEquals("iteration_limit", persistence.audit.last().outcome["state_to"])
+  }
+
+  @Test fun classifiesDeliberateAgentStopWithoutLeakingItsReasonToAudit() = kotlinx.coroutines.test.runTest {
+    val persistence = FakePersistence()
+    val agent = DecisionLoopAgent(
+      decider = AgentDecider { _, _, _ -> AgentDecision.Fail("missing local context") },
+      planningAgent = recordingPlanner { AgentResult.NoOp },
+      clock = fixedClock(),
+      auditIdFactory = { "audit-1" }
+    )
+
+    val result = agent.handleTask(task, fakeContext(persistence))
+
+    val failure = assertIs<AgentResult.Failure>(result)
+    assertEquals("missing local context", failure.reason)
+    assertEquals(AgentFailureKind.AGENT_STOPPED, failure.kind)
+    assertEquals("missing local context".length, persistence.audit.single().outcome["reason_length"])
+    assertTrue("missing local context" !in persistence.audit.single().outcome.values)
+  }
+
+  @Test fun classifiesUnexpectedDeciderErrorWithoutLeakingExceptionMessage() = kotlinx.coroutines.test.runTest {
+    val persistence = FakePersistence()
+    val agent = DecisionLoopAgent(
+      decider = AgentDecider { _, _, _ -> error("private endpoint unavailable") },
+      planningAgent = recordingPlanner { AgentResult.NoOp }
+    )
+
+    val result = agent.handleTask(task, fakeContext(persistence))
+
+    val failure = assertIs<AgentResult.Failure>(result)
+    assertEquals("unable to decide next step", failure.reason)
+    assertEquals(AgentFailureKind.INTERNAL_ERROR, failure.kind)
+    assertEquals("decision_loop_unavailable", failure.details?.get("error_code"))
+    assertTrue("private endpoint unavailable" !in failure.details.orEmpty().values)
   }
 
   @Test fun rejectsUnsafeDecisionMetadataBeforeTheLoopRuns() {
@@ -183,7 +232,16 @@ class DecisionLoopAgentTest {
 
     val success = assertIs<AgentResult.Success>(result)
     assertEquals(reference, success.output["reference_id"])
-    assertEquals(mapOf("iteration" to 1, "reference_present" to true), persistence.audit.single().outcome)
+    assertEquals(
+      mapOf(
+        "iteration" to 1,
+        "reference_present" to true,
+        "state_from" to "deciding",
+        "state_to" to "waiting_review",
+        "transition_reason" to "review_wait"
+      ),
+      persistence.audit.single().outcome
+    )
   }
 
   @Test fun rejectsNonPlanningTasksBeforeDeciding() = kotlinx.coroutines.test.runTest {
@@ -198,6 +256,7 @@ class DecisionLoopAgentTest {
 
     val failure = assertIs<AgentResult.Failure>(result)
     assertEquals("decision loop requires a task in planning state", failure.reason)
+    assertEquals(AgentFailureKind.INVALID_INPUT, failure.kind)
     assertTrue(!decided)
     assertTrue(persistence.audit.isEmpty())
   }

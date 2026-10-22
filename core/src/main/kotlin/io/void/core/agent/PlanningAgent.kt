@@ -2,10 +2,12 @@ package io.void.core.agent
 
 import io.void.core.contract.Agent
 import io.void.core.contract.AgentContext
+import io.void.core.contract.AgentFailureKind
 import io.void.core.contract.AgentResult
 import io.void.core.contract.ModelRequestMeta
 import io.void.core.contract.PlanGenerator
 import io.void.core.model.AuditLog
+import io.void.core.model.LifecycleTransitions
 import io.void.core.model.Plan
 import io.void.core.model.Step
 import io.void.core.model.StepStatus
@@ -30,10 +32,10 @@ class PlanningAgent(
 
   override suspend fun handleTask(task: Task, context: AgentContext): AgentResult {
     if (task.objective.isBlank()) {
-      return AgentResult.Failure("task objective must not be blank")
+      return failure("task objective must not be blank", AgentFailureKind.INVALID_INPUT)
     }
     if (task.status != TaskStatus.PLANNING) {
-      return AgentResult.Failure("planning agent requires a task in planning state")
+      return failure("planning agent requires a task in planning state", AgentFailureKind.INVALID_INPUT)
     }
 
     return try {
@@ -61,7 +63,7 @@ class PlanningAgent(
           "model_mode" to model.mode
         )
       )
-      val reviewedTask = task.copy(status = TaskStatus.PENDING_REVIEW)
+      val reviewedTask = LifecycleTransitions.task(task, TaskStatus.PENDING_REVIEW)
       context.persistence.saveTask(reviewedTask)
       context.persistence.savePlan(plan)
       context.persistence.appendAudit(
@@ -90,11 +92,21 @@ class PlanningAgent(
         evidence = listOf(mapOf("audit_action" to "plan_proposed", "model_id" to model.modelId))
       )
     } catch (error: IllegalArgumentException) {
-      AgentResult.Failure(error.message ?: "invalid plan proposal")
+      failure("invalid plan proposal", AgentFailureKind.INVALID_INPUT, "plan_proposal_invalid")
     } catch (error: Exception) {
-      AgentResult.Failure("unable to propose plan", mapOf("error_type" to error::class.simpleName.orEmpty()))
+      failure("unable to propose plan", AgentFailureKind.DEPENDENCY_FAILURE, "plan_dependency_unavailable")
     }
   }
+
+  private fun failure(
+    reason: String,
+    kind: AgentFailureKind,
+    errorCode: String? = null
+  ): AgentResult.Failure = AgentResult.Failure(
+    reason = reason,
+    kind = kind,
+    details = errorCode?.let { mapOf("error_code" to it) }
+  )
 
   private fun validateProposal(steps: List<Step>) {
     require(steps.isNotEmpty()) { "plan must contain at least one step" }
