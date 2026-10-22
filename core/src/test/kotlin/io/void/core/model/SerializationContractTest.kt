@@ -1,6 +1,7 @@
 package io.void.core.model
 
 import com.fasterxml.jackson.module.kotlin.readValue
+import io.void.core.contract.ExecutionAuthorization
 import io.void.core.serialization.VoidObjectMapper
 import java.time.Instant
 import kotlin.test.Test
@@ -35,6 +36,15 @@ class SerializationContractTest {
   assertEquals(tool, mapper.readValue<ToolDescriptor>(mapper.writeValueAsString(tool)))
   val audit = AuditLog("entry-1", "task-1", Instant.EPOCH, "user-1", "review")
   assertEquals(audit, mapper.readValue<AuditLog>(mapper.writeValueAsString(audit)))
+ }
+
+ @Test fun proposalCapabilityAndAuthorizationUsePublicWireContract() {
+  val capability = CapabilityDescriptor("notes.create", "local-note", CapabilityOperation.WRITE, authorizationPermissions = setOf("notes.write"))
+  assertEquals(capability, mapper.readValue<CapabilityDescriptor>(mapper.writeValueAsString(capability)))
+  val proposal = ActionProposal("proposal-1", "task-1", "user-1", "local-note", "tool.execute/local-note", "a".repeat(64), capabilityIds = setOf("notes.create"), summary = "Criar nota", createdAt = Instant.EPOCH, expiresAt = Instant.EPOCH.plusSeconds(60))
+  assertEquals(proposal, mapper.readValue<ActionProposal>(mapper.writeValueAsString(proposal)))
+  val authorization = ExecutionAuthorization("auth-1", "task-1", "local-note", "user-1", "tool.execute/local-note", "a".repeat(64), policyVersion = "v1", issuedAt = Instant.EPOCH, expiresAt = Instant.EPOCH.plusSeconds(60))
+  assertEquals(authorization, mapper.readValue<ExecutionAuthorization>(mapper.writeValueAsString(authorization)))
  }
 
  @Test fun rejectsUnknownContractFields() {
