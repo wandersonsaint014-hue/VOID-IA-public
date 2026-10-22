@@ -39,7 +39,7 @@ class DecisionLoopStateMachineTest {
     val guarded = DecisionLoopStateMachine()
     val failed = guarded.stopForGuardFailure("repeated_observation")
 
-    assertEquals(DecisionLoopState.FAILED, failed.to)
+    assertEquals(DecisionLoopState.BLOCKED, failed.to)
     assertTrue(guarded.state.isTerminal)
     assertFailsWith<IllegalArgumentException> { guarded.resumeDeciding() }
 
