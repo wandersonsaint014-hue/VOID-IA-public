@@ -2,6 +2,7 @@ package io.void.core.agent
 
 import io.void.core.contract.Agent
 import io.void.core.contract.AgentContext
+import io.void.core.contract.AgentFailureKind
 import io.void.core.contract.AgentResult
 import io.void.core.contract.ModelRequestMeta
 import io.void.core.contract.PlanGenerator
@@ -31,10 +32,10 @@ class PlanningAgent(
 
   override suspend fun handleTask(task: Task, context: AgentContext): AgentResult {
     if (task.objective.isBlank()) {
-      return AgentResult.Failure("task objective must not be blank")
+      return failure("task objective must not be blank", AgentFailureKind.INVALID_INPUT)
     }
     if (task.status != TaskStatus.PLANNING) {
-      return AgentResult.Failure("planning agent requires a task in planning state")
+      return failure("planning agent requires a task in planning state", AgentFailureKind.INVALID_INPUT)
     }
 
     return try {
@@ -91,11 +92,21 @@ class PlanningAgent(
         evidence = listOf(mapOf("audit_action" to "plan_proposed", "model_id" to model.modelId))
       )
     } catch (error: IllegalArgumentException) {
-      AgentResult.Failure(error.message ?: "invalid plan proposal")
+      failure(error.message ?: "invalid plan proposal", AgentFailureKind.INVALID_INPUT)
     } catch (error: Exception) {
-      AgentResult.Failure("unable to propose plan", mapOf("error_type" to error::class.simpleName.orEmpty()))
+      failure("unable to propose plan", AgentFailureKind.DEPENDENCY_FAILURE, error)
     }
   }
+
+  private fun failure(
+    reason: String,
+    kind: AgentFailureKind,
+    error: Exception? = null
+  ): AgentResult.Failure = AgentResult.Failure(
+    reason = reason,
+    kind = kind,
+    details = error?.let { mapOf("error_type" to it::class.simpleName.orEmpty()) }
+  )
 
   private fun validateProposal(steps: List<Step>) {
     require(steps.isNotEmpty()) { "plan must contain at least one step" }
