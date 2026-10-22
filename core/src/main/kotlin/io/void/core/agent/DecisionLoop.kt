@@ -150,49 +150,62 @@ class DecisionLoopAgent(
 
     return try {
       var currentObservations = observations.toList()
+      val stateMachine = DecisionLoopStateMachine()
       repeat(maxIterations) { index ->
         val decision = decider.decide(task, currentObservations, index + 1)
 
         when (decision) {
           is AgentDecision.Respond -> {
-            audit(context, task.taskId, "agent_responded", mapOf("iteration" to index + 1, "detail_count" to decision.details.size))
+            val transition = stateMachine.apply(decision)
+            audit(context, task.taskId, "agent_responded", mapOf("iteration" to index + 1, "detail_count" to decision.details.size) + transition.auditFields())
             return AgentResult.Success(mapOf("status" to "responded", "message" to decision.message, "details" to decision.details))
           }
           is AgentDecision.AskClarification -> {
-            audit(context, task.taskId, "clarification_requested", mapOf("iteration" to index + 1))
+            val transition = stateMachine.apply(decision)
+            audit(context, task.taskId, "clarification_requested", mapOf("iteration" to index + 1) + transition.auditFields())
             return AgentResult.Success(mapOf("status" to "needs_clarification", "question" to decision.question))
           }
           AgentDecision.ProposePlan -> {
-            audit(context, task.taskId, "plan_decided", mapOf("iteration" to index + 1))
+            val transition = stateMachine.apply(decision)
+            audit(context, task.taskId, "plan_decided", mapOf("iteration" to index + 1) + transition.auditFields())
             return planningAgent.handleTask(task, context)
           }
           is AgentDecision.ProposeAction -> {
-            audit(context, task.taskId, "action_proposal_decided", mapOf("iteration" to index + 1, "summary_length" to decision.summary.length))
+            val transition = stateMachine.apply(decision)
+            audit(context, task.taskId, "action_proposal_decided", mapOf("iteration" to index + 1, "summary_length" to decision.summary.length) + transition.auditFields())
             return AgentResult.Success(mapOf("status" to "action_proposal_required", "summary" to decision.summary))
           }
           is AgentDecision.WaitForReview -> {
-            audit(context, task.taskId, "review_waiting", mapOf("iteration" to index + 1, "reference_present" to true))
+            val transition = stateMachine.apply(decision)
+            audit(context, task.taskId, "review_waiting", mapOf("iteration" to index + 1, "reference_present" to true) + transition.auditFields())
             return AgentResult.Success(mapOf("status" to "awaiting_review", "reference_id" to decision.referenceId))
           }
           is AgentDecision.Continue -> {
             if (decision.observation in currentObservations) {
-              audit(context, task.taskId, "decision_loop_stopped", mapOf("reason" to "repeated_observation", "iteration" to index + 1))
+              val transition = stateMachine.stopForGuardFailure("repeated_observation")
+              audit(context, task.taskId, "decision_loop_stopped", mapOf("reason" to "repeated_observation", "iteration" to index + 1) + transition.auditFields())
               return AgentResult.Failure("decision loop repeated without a new observation")
             }
-            audit(context, task.taskId, "observation_recorded", mapOf("iteration" to index + 1, "kind" to decision.observation.kind))
+            val observed = stateMachine.apply(decision, hasNewObservation = true)
+            audit(context, task.taskId, "observation_recorded", mapOf("iteration" to index + 1, "kind" to decision.observation.kind) + observed.auditFields())
             currentObservations = currentObservations + decision.observation
+            val resumed = stateMachine.resumeDeciding()
+            audit(context, task.taskId, "decision_resumed", mapOf("iteration" to index + 1) + resumed.auditFields())
           }
           AgentDecision.Complete -> {
-            audit(context, task.taskId, "agent_completed", mapOf("iteration" to index + 1))
+            val transition = stateMachine.apply(decision)
+            audit(context, task.taskId, "agent_completed", mapOf("iteration" to index + 1) + transition.auditFields())
             return AgentResult.Success(mapOf("status" to "completed"))
           }
           is AgentDecision.Fail -> {
-            audit(context, task.taskId, "agent_failed", mapOf("iteration" to index + 1, "reason_length" to decision.reason.length))
+            val transition = stateMachine.apply(decision)
+            audit(context, task.taskId, "agent_failed", mapOf("iteration" to index + 1, "reason_length" to decision.reason.length) + transition.auditFields())
             return AgentResult.Failure(decision.reason)
           }
         }
       }
-      audit(context, task.taskId, "decision_loop_stopped", mapOf("reason" to "iteration_limit", "max_iterations" to maxIterations))
+      val transition = stateMachine.stopAtIterationLimit()
+      audit(context, task.taskId, "decision_loop_stopped", mapOf("reason" to "iteration_limit", "max_iterations" to maxIterations) + transition.auditFields())
       AgentResult.Failure("decision loop iteration limit reached")
     } catch (error: IllegalArgumentException) {
       AgentResult.Failure(error.message ?: "invalid agent decision")
