@@ -204,7 +204,8 @@ class DecisionLoopAgentTest {
     val failure = assertIs<AgentResult.Failure>(result)
     assertEquals("unable to decide next step", failure.reason)
     assertEquals(AgentFailureKind.INTERNAL_ERROR, failure.kind)
-    assertEquals("IllegalStateException", failure.details?.get("error_type"))
+    assertEquals("decision_loop_unavailable", failure.details?.get("error_code"))
+    assertTrue("private endpoint unavailable" !in failure.details.orEmpty().values)
   }
 
   @Test fun rejectsUnsafeDecisionMetadataBeforeTheLoopRuns() {
