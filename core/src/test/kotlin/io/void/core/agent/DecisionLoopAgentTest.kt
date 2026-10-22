@@ -103,7 +103,10 @@ class DecisionLoopAgentTest {
 
     val success = assertIs<AgentResult.Success>(result)
     assertEquals("completed", success.output["status"])
-    assertEquals(listOf("observation_recorded", "agent_completed"), persistence.audit.map { it.action })
+    assertEquals(listOf("observation_recorded", "decision_resumed", "agent_completed"), persistence.audit.map { it.action })
+    assertEquals("observing", persistence.audit[0].outcome["state_to"])
+    assertEquals("deciding", persistence.audit[1].outcome["state_to"])
+    assertEquals("completed", persistence.audit[2].outcome["state_to"])
   }
 
   @Test fun stopsRepeatedDecisionWithoutNewObservation() = kotlinx.coroutines.test.runTest {
@@ -119,7 +122,9 @@ class DecisionLoopAgentTest {
 
     val failure = assertIs<AgentResult.Failure>(result)
     assertEquals("decision loop repeated without a new observation", failure.reason)
-    assertEquals(listOf("observation_recorded", "decision_loop_stopped"), persistence.audit.map { it.action })
+    assertEquals(listOf("observation_recorded", "decision_resumed", "decision_loop_stopped"), persistence.audit.map { it.action })
+    assertEquals("failed", persistence.audit.last().outcome["state_to"])
+    assertEquals("repeated_observation", persistence.audit.last().outcome["transition_reason"])
   }
 
   @Test fun stopsWhenAnEarlierObservationRepeats() = kotlinx.coroutines.test.runTest {
@@ -140,6 +145,8 @@ class DecisionLoopAgentTest {
     val failure = assertIs<AgentResult.Failure>(result)
     assertEquals("decision loop repeated without a new observation", failure.reason)
     assertEquals(listOf("decision_loop_stopped"), persistence.audit.map { it.action })
+    assertEquals("failed", persistence.audit.single().outcome["state_to"])
+    assertEquals("repeated_observation", persistence.audit.single().outcome["transition_reason"])
   }
 
   @Test fun stopsAtIterationLimit() = kotlinx.coroutines.test.runTest {
@@ -156,7 +163,11 @@ class DecisionLoopAgentTest {
 
     val failure = assertIs<AgentResult.Failure>(result)
     assertEquals("decision loop iteration limit reached", failure.reason)
-    assertEquals(listOf("observation_recorded", "observation_recorded", "decision_loop_stopped"), persistence.audit.map { it.action })
+    assertEquals(
+      listOf("observation_recorded", "decision_resumed", "observation_recorded", "decision_resumed", "decision_loop_stopped"),
+      persistence.audit.map { it.action }
+    )
+    assertEquals("iteration_limit", persistence.audit.last().outcome["state_to"])
   }
 
   @Test fun rejectsUnsafeDecisionMetadataBeforeTheLoopRuns() {
@@ -183,7 +194,16 @@ class DecisionLoopAgentTest {
 
     val success = assertIs<AgentResult.Success>(result)
     assertEquals(reference, success.output["reference_id"])
-    assertEquals(mapOf("iteration" to 1, "reference_present" to true), persistence.audit.single().outcome)
+    assertEquals(
+      mapOf(
+        "iteration" to 1,
+        "reference_present" to true,
+        "state_from" to "deciding",
+        "state_to" to "waiting_review",
+        "transition_reason" to "review_wait"
+      ),
+      persistence.audit.single().outcome
+    )
   }
 
   @Test fun rejectsNonPlanningTasksBeforeDeciding() = kotlinx.coroutines.test.runTest {
