@@ -1,6 +1,7 @@
 package io.void.core.agent
 
 import io.void.core.contract.AgentContext
+import io.void.core.contract.AgentFailureKind
 import io.void.core.contract.ModelRequestMeta
 import io.void.core.contract.ModelRouter
 import io.void.core.contract.ModelSelection
@@ -78,6 +79,7 @@ class PlanningAgentTest {
 
     val failure = assertIs<io.void.core.contract.AgentResult.Failure>(result)
     assertEquals("planning agent requires a task in planning state", failure.reason)
+    assertEquals(AgentFailureKind.INVALID_INPUT, failure.kind)
     assertTrue(!routerCalled)
     assertTrue(persistence.tasks.isEmpty())
   }
@@ -92,6 +94,7 @@ class PlanningAgentTest {
 
     val failure = assertIs<io.void.core.contract.AgentResult.Failure>(result)
     assertTrue(failure.reason.contains("pending review"))
+    assertEquals(AgentFailureKind.INVALID_INPUT, failure.kind)
     assertTrue(persistence.tasks.isEmpty())
   }
 
