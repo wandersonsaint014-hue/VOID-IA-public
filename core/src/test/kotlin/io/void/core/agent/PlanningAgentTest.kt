@@ -93,8 +93,9 @@ class PlanningAgentTest {
     val result = agent.handleTask(task, fakeContext(persistence) {})
 
     val failure = assertIs<io.void.core.contract.AgentResult.Failure>(result)
-    assertTrue(failure.reason.contains("pending review"))
+    assertEquals("invalid plan proposal", failure.reason)
     assertEquals(AgentFailureKind.INVALID_INPUT, failure.kind)
+    assertEquals("plan_proposal_invalid", failure.details?.get("error_code"))
     assertTrue(persistence.tasks.isEmpty())
   }
 
@@ -109,7 +110,8 @@ class PlanningAgentTest {
     val result = agent.handleTask(task, fakeContext(persistence) {})
 
     val failure = assertIs<io.void.core.contract.AgentResult.Failure>(result)
-    assertTrue(failure.reason.contains("unique"))
+    assertEquals("invalid plan proposal", failure.reason)
+    assertEquals("plan_proposal_invalid", failure.details?.get("error_code"))
     assertTrue(persistence.tasks.isEmpty())
     assertTrue(persistence.plans.isEmpty())
     assertTrue(persistence.audit.isEmpty())
@@ -120,7 +122,8 @@ class PlanningAgentTest {
     val agent = PlanningAgent(generator = { _, _ -> listOf(Step("step-1", "Enviar", "planner", tool = "send-message")) })
     val result = agent.handleTask(task, fakeContext(persistence) {})
     val failure = assertIs<io.void.core.contract.AgentResult.Failure>(result)
-    assertTrue(failure.reason.contains("cannot propose executable tools"))
+    assertEquals("invalid plan proposal", failure.reason)
+    assertEquals("plan_proposal_invalid", failure.details?.get("error_code"))
     assertTrue(persistence.plans.isEmpty())
     assertTrue(persistence.audit.isEmpty())
   }
