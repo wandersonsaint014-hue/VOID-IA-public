@@ -211,18 +211,18 @@ class DecisionLoopAgent(
     } catch (error: IllegalArgumentException) {
       failure("invalid agent decision", AgentFailureKind.INVALID_INPUT)
     } catch (error: Exception) {
-      failure("unable to decide next step", AgentFailureKind.INTERNAL_ERROR, error)
+      failure("unable to decide next step", AgentFailureKind.INTERNAL_ERROR, "decision_loop_unavailable")
     }
   }
 
   private fun failure(
     reason: String,
     kind: AgentFailureKind,
-    error: Exception? = null
+    errorCode: String? = null
   ): AgentResult.Failure = AgentResult.Failure(
     reason = reason,
     kind = kind,
-    details = error?.let { mapOf("error_type" to it::class.simpleName.orEmpty()) }
+    details = errorCode?.let { mapOf("error_code" to it) }
   )
 
   private suspend fun audit(context: AgentContext, taskId: String, action: String, outcome: Map<String, Any>) {
