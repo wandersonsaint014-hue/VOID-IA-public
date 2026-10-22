@@ -19,6 +19,7 @@ import java.time.Instant
 import java.time.ZoneOffset
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
@@ -62,13 +63,8 @@ class PlanningAgentTest {
   @Test fun rejectsEmptyObjectiveBeforeModelOrPersistence() = kotlinx.coroutines.test.runTest {
     val persistence = FakePersistence()
     var routerCalled = false
-    val agent = PlanningAgent(generator = { _, _ -> error("must not generate") })
-    val blankTask = task.copy(objective = "   ")
 
-    val result = agent.handleTask(blankTask, fakeContext(persistence) { routerCalled = true })
-
-    val failure = assertIs<io.void.core.contract.AgentResult.Failure>(result)
-    assertEquals("task objective must not be blank", failure.reason)
+    assertFailsWith<IllegalArgumentException> { task.copy(objective = "   ") }
     assertTrue(!routerCalled)
     assertTrue(persistence.tasks.isEmpty())
   }
@@ -100,22 +96,20 @@ class PlanningAgentTest {
   }
 
   @Test fun rejectsAmbiguousOrIncompleteStepsBeforePersistence() = kotlinx.coroutines.test.runTest {
-    val invalidPlans = listOf(
-      listOf(Step(" ", "Reunir matérias", "planner")) to "identifiers",
-      listOf(Step("step-1", "Reunir matérias", "planner"), Step("step-1", "Revisar matérias", "planner")) to "unique",
-      listOf(Step("step-1", "Reunir matérias", " ")) to "responsible"
-    )
+    assertFailsWith<IllegalArgumentException> { Step(" ", "Reunir matérias", "planner") }
+    assertFailsWith<IllegalArgumentException> { Step("step-1", "Reunir matérias", " ") }
 
-    invalidPlans.forEach { (steps, expectedReason) ->
-      val persistence = FakePersistence()
-      val agent = PlanningAgent(generator = { _, _ -> steps })
-      val result = agent.handleTask(task, fakeContext(persistence) {})
-      val failure = assertIs<io.void.core.contract.AgentResult.Failure>(result)
-      assertTrue(failure.reason.contains(expectedReason))
-      assertTrue(persistence.tasks.isEmpty())
-      assertTrue(persistence.plans.isEmpty())
-      assertTrue(persistence.audit.isEmpty())
-    }
+    val persistence = FakePersistence()
+    val agent = PlanningAgent(generator = {
+      _, _ -> listOf(Step("step-1", "Reunir matérias", "planner"), Step("step-1", "Revisar matérias", "planner"))
+    })
+    val result = agent.handleTask(task, fakeContext(persistence) {})
+
+    val failure = assertIs<io.void.core.contract.AgentResult.Failure>(result)
+    assertTrue(failure.reason.contains("unique"))
+    assertTrue(persistence.tasks.isEmpty())
+    assertTrue(persistence.plans.isEmpty())
+    assertTrue(persistence.audit.isEmpty())
   }
 
   @Test fun rejectsToolBearingPlanAndDoesNotPersistIt() = kotlinx.coroutines.test.runTest {
