@@ -10,7 +10,7 @@ repositories {
 }
 
 dependencies {
- implementation(platform("com.fasterxml.jackson:jackson-bom:2.16.1"))
+ implementation(platform("com.fasterxml.jackson:jackson-bom:2.22.4"))
  implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
  implementation("com.fasterxml.jackson.core:jackson-databind")
  implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
